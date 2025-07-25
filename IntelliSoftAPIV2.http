@@ -1,0 +1,6 @@
+@IntelliSoftAPIV2_HostAddress = http://localhost:5217
+
+GET {{IntelliSoftAPIV2_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
