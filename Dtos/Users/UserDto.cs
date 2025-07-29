@@ -9,10 +9,11 @@ namespace IntelliSoftAPIV2.Dtos.Users
         public string Nombre{ get; set; }
         public string Apellidos { get; set; }
         public string Email { get; set; }
-        public string? Rol { get; set; }
-        [Required]
-        [MaxLength(10)]
         public string? Direccion { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Rol { get; set; }
+      
+        
 
     }
 }

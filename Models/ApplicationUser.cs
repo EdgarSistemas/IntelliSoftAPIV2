@@ -13,8 +13,10 @@ namespace IntelliSoftAPIV2.Models
         [MaxLength(100)]
         public string? Apellidos { get; set; } // ? significa que pueden ser nullos
         public string? Direccion { get; set; }
+        public string? PhoneNumber {  get; set; }
         public DateTime fecha_registro { get; set; } = DateTime.UtcNow;
         public bool estatus { get; set; } = true;
+       
 
 
         //Relaciones con las tablas
