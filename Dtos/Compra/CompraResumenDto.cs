@@ -10,6 +10,7 @@ namespace IntelliSoftAPIV2.Dtos.Compra
         public string? Observacion { get; set; }
         public int? Estatus { get; set; }
         public string ProveedorNombre { get; set; } = string.Empty;
+        public decimal Total { get; set; }
         public ProveedorResponseDto Proveedor { get; set; } = new();
     }
 }

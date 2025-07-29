@@ -220,8 +220,8 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("TB_InventarioInsumo", "almacen");
 
             entity.Property(e => e.IdInventarioInsumo)
-                .ValueGeneratedNever()
-                .HasColumnName("id_inventario_insumo");
+                .HasColumnName("id_inventario_insumo")
+                .ValueGeneratedOnAdd();
             entity.Property(e => e.CompraId).HasColumnName("compra_id");
             entity.Property(e => e.Costo)
                 .HasColumnType("decimal(18, 2)")

@@ -33,7 +33,12 @@ namespace IntelliSoftAPIV2.Services.Insumo
                         Simbolo = i.Unidad.Simbolo,
                         Descripcion = i.Unidad.Descripcion,
                         Estatus = i.Unidad.Estatus
-                    }
+                    },
+                    Existencias = _context.TbInventarioInsumos
+                        .Where(inv => inv.InsumoId == i.IdInsumo)
+                        .OrderByDescending(inv => inv.Fecha)
+                        .Select(inv => inv.Existencias)
+                        .FirstOrDefault()
                 }).ToListAsync();
         }
 
@@ -45,6 +50,12 @@ namespace IntelliSoftAPIV2.Services.Insumo
 
             if (i == null) return null;
 
+            var existencias = await _context.TbInventarioInsumos
+                .Where(inv => inv.InsumoId == i.IdInsumo)
+                .OrderByDescending(inv => inv.Fecha)
+                .Select(inv => inv.Existencias)
+                .FirstOrDefaultAsync();
+
             return new InsumoDto
             {
                 IdInsumo = i.IdInsumo,
@@ -52,6 +63,7 @@ namespace IntelliSoftAPIV2.Services.Insumo
                 Descripcion = i.Descripcion,
                 UnidadId = i.UnidadId,
                 Estatus = i.Estatus,
+                Existencias = existencias,
                 Unidad = new UnidadDto
                 {
                     IdUnidad = i.Unidad.IdUnidad,

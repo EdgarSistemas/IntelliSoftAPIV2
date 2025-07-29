@@ -21,7 +21,7 @@ namespace IntelliSoftAPIV2.Services.Compra
                 ClaveCompra = $"C-{DateTime.Now.Ticks}",
                 FechaCompra = DateTime.Now,
                 Observacion = dto.Observacion,
-                Estatus = 0,
+                Estatus = 0, // creada
                 ProveedorId = dto.ProveedorId
             };
 
@@ -51,16 +51,65 @@ namespace IntelliSoftAPIV2.Services.Compra
             if (compra == null)
                 return ServiceResult<string>.Failure("Compra no encontrada");
 
-            // Eliminar inventario si ya estaba inventariada
-            if (compra.Estatus == 1 && compra.TbInventarioInsumos.Any())
+            if (compra.Estatus != 1)
             {
-                _context.TbInventarioInsumos.RemoveRange(compra.TbInventarioInsumos);
+                // Si no fue inventariada, simplemente cambia el estatus
+                compra.Estatus = 2;
+                await _context.SaveChangesAsync();
+                return ServiceResult<string>.CreateSuccess("Compra cancelada correctamente");
             }
 
+            // Guarda insumos afectados antes de eliminar
+            var insumosAfectados = compra.TbInventarioInsumos
+                .Select(i => i.InsumoId)
+                .Distinct()
+                .ToList();
+
+            // Elimina los registros de inventario de esta compra
+            _context.TbInventarioInsumos.RemoveRange(compra.TbInventarioInsumos);
             compra.Estatus = 2; // Cancelada
+
             await _context.SaveChangesAsync();
 
-            return ServiceResult<string>.CreateSuccess("Compra cancelada correctamente");
+            // Recalcula inventario de cada insumo afectado
+            foreach (var insumoId in insumosAfectados)
+            {
+                await RecalcularInventarioInsumo(insumoId);
+            }
+
+            return ServiceResult<string>.CreateSuccess("Compra cancelada y existencias recalculadas correctamente");
+        }
+
+        private async Task RecalcularInventarioInsumo(int insumoId)
+        {
+            var inventarios = await _context.TbInventarioInsumos
+                .Where(i => i.InsumoId == insumoId)
+                .OrderBy(i => i.Fecha)
+                .ToListAsync();
+
+            decimal saldo = 0;
+            int existencia = 0;
+
+            foreach (var item in inventarios)
+            {
+                if (item.Entrada.HasValue)
+                {
+                    existencia += item.Entrada.Value;
+                    saldo += item.Debe ?? 0;
+                }
+
+                if (item.Salida.HasValue)
+                {
+                    existencia -= item.Salida.Value;
+                    saldo -= item.Haber ?? 0;
+                }
+
+                item.Existencias = existencia;
+                item.Saldo = saldo;
+                item.Promedio = existencia > 0 ? saldo / existencia : 0;
+            }
+
+            await _context.SaveChangesAsync();
         }
 
         public async Task<List<CompraResumenDto>> ListarCompras()
@@ -83,7 +132,8 @@ namespace IntelliSoftAPIV2.Services.Compra
                         CorreoElectronico = c.Proveedor.CorreoElectronico,
                         DescripcionServicio = c.Proveedor.DescripcionServicio,
                         Estatus = c.Proveedor.Estatus
-                    }
+                    },
+                    Total = c.TbCompraDetalles.Sum(cd => cd.Cantidad * cd.PrecioUnitario)
                 }).ToListAsync();
         }
 
@@ -156,7 +206,8 @@ namespace IntelliSoftAPIV2.Services.Compra
                         CorreoElectronico = c.Proveedor.CorreoElectronico,
                         DescripcionServicio = c.Proveedor.DescripcionServicio,
                         Estatus = c.Proveedor.Estatus
-                    }
+                    },
+                    Total = c.TbCompraDetalles.Sum(cd => cd.Cantidad * cd.PrecioUnitario)
                 }).ToListAsync();
         }
 
@@ -220,7 +271,7 @@ namespace IntelliSoftAPIV2.Services.Compra
                 });
             }
 
-            compra.Estatus = 1;
+            compra.Estatus = 1; // inventariada
             await _context.SaveChangesAsync();
             return ServiceResult<string>.CreateSuccess("Compra inventariada correctamente");
         }
