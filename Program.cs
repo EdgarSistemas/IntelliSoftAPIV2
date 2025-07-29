@@ -9,6 +9,8 @@ using System.Security.Claims;
 using IntelliSoftAPI.Models;
 using IntelliSoftAPIV2.Services;
 using IntelliSoftAPIV2.Services.Proveedores;
+using IntelliSoftAPIV2.Services.Unidad;
+using IntelliSoftAPIV2.Services.Insumo;
 
 
 
@@ -71,6 +73,8 @@ builder.Services.AddAuthorization();
 //servicios 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<UnidadService>();
+builder.Services.AddScoped<InsumoService>();
 builder.Services.AddScoped<IProveedorService, ProveedorService>();
 
 
