@@ -8,6 +8,7 @@ using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using IntelliSoftAPI.Models;
 using IntelliSoftAPIV2.Services;
+using IntelliSoftAPIV2.Services.Proveedores;
 
 
 
@@ -70,6 +71,7 @@ builder.Services.AddAuthorization();
 //servicios 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IProveedorService, ProveedorService>();
 
 
 builder.Services.AddControllers();
