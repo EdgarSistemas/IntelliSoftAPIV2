@@ -11,6 +11,7 @@ using IntelliSoftAPIV2.Services;
 using IntelliSoftAPIV2.Services.Proveedores;
 using IntelliSoftAPIV2.Services.Unidad;
 using IntelliSoftAPIV2.Services.Insumo;
+using IntelliSoftAPIV2.Services.Compra;
 
 
 
@@ -75,6 +76,7 @@ builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UnidadService>();
 builder.Services.AddScoped<InsumoService>();
+builder.Services.AddScoped<CompraService>();
 builder.Services.AddScoped<IProveedorService, ProveedorService>();
 
 
