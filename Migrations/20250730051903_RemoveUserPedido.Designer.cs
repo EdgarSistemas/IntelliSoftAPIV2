@@ -4,6 +4,7 @@ using IntelliSoftAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IntelliSoftAPIV2.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250730051903_RemoveUserPedido")]
+    partial class RemoveUserPedido
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,12 +71,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasColumnName("id_comentario");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdComentario"));
-
-                    b.Property<int>("Estatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("estatus");
 
                     b.Property<DateTime?>("Fecha")
                         .HasColumnType("datetime")
@@ -362,12 +359,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(1000)")
                         .HasColumnName("comentario");
-
-                    b.Property<int>("Estatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("estatus");
 
                     b.Property<DateTime?>("Fecha")
                         .HasColumnType("datetime")

@@ -24,18 +24,6 @@ namespace IntelliSoftAPIV2.Migrations
                 schema: "operaciones",
                 table: "TB_Pedido");
 
-            migrationBuilder.RenameColumn(
-                name: "cliente_id",
-                schema: "operaciones",
-                table: "TB_Pedido",
-                newName: "ApplicationUserId");
-
-            migrationBuilder.RenameIndex(
-                name: "IX_TB_Pedido_cliente_id",
-                schema: "operaciones",
-                table: "TB_Pedido",
-                newName: "IX_TB_Pedido_ApplicationUserId");
-
             migrationBuilder.AddColumn<int>(
                 name: "cantidad",
                 schema: "operaciones",
@@ -82,14 +70,6 @@ namespace IntelliSoftAPIV2.Migrations
                 column: "cotizacion_id");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_TB_Pedido_AspNetUsers_ApplicationUserId",
-                schema: "operaciones",
-                table: "TB_Pedido",
-                column: "ApplicationUserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id");
-
-            migrationBuilder.AddForeignKey(
                 name: "FK_TB_Pedido_Cotizacion",
                 schema: "operaciones",
                 table: "TB_Pedido",
@@ -102,11 +82,6 @@ namespace IntelliSoftAPIV2.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_TB_Pedido_AspNetUsers_ApplicationUserId",
-                schema: "operaciones",
-                table: "TB_Pedido");
-
             migrationBuilder.DropForeignKey(
                 name: "FK_TB_Pedido_Cotizacion",
                 schema: "operaciones",
@@ -131,18 +106,6 @@ namespace IntelliSoftAPIV2.Migrations
                 name: "precio_unitario",
                 schema: "operaciones",
                 table: "TB_Pedido");
-
-            migrationBuilder.RenameColumn(
-                name: "ApplicationUserId",
-                schema: "operaciones",
-                table: "TB_Pedido",
-                newName: "cliente_id");
-
-            migrationBuilder.RenameIndex(
-                name: "IX_TB_Pedido_ApplicationUserId",
-                schema: "operaciones",
-                table: "TB_Pedido",
-                newName: "IX_TB_Pedido_cliente_id");
 
             migrationBuilder.AddColumn<decimal>(
                 name: "total",

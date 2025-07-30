@@ -15,7 +15,7 @@ public partial class TbPedido
 
     public DateTime? FechaPedido { get; set; }
 
-    public string? Estatus { get; set; }
+    public int? Estatus { get; set; } = 1;
 
     public virtual TbCotizacion Cotizacion { get; set; } = null!;
 

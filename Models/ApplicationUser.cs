@@ -21,7 +21,6 @@ namespace IntelliSoftAPIV2.Models
         public virtual ICollection<TbComentario> TbComentarios { get; set; }
         public virtual ICollection<TbCotizacion> TbCotizaciones { get; set; }
         public virtual ICollection<TbOpinion> TbOpiniones { get; set; }
-        public virtual ICollection<TbPedido> TbPedidos { get; set; }
 
     }
 }
