@@ -83,10 +83,14 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
                 .HasMaxLength(1000)
                 .IsUnicode(false)
                 .HasColumnName("mensaje");
+            entity.Property(e => e.Estatus)
+                .HasDefaultValue(1)
+                .HasColumnName("estatus");
             entity.Property(e => e.UsuarioId).HasColumnName("usuario_id");
 
             entity.HasOne(d => d.Usuario).WithMany(p => p.TbComentarios)
                 .HasForeignKey(d => d.UsuarioId)
+                .IsRequired(false)
                 .HasConstraintName("FK__TB_Coment__usuar__0C85DE4D");
         });
 
@@ -285,6 +289,9 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.HasOne(d => d.Producto).WithMany(p => p.TbOpiniones)
                 .HasForeignKey(d => d.ProductoId)
                 .HasConstraintName("FK__TB_Opinio__produ__08B54D69");
+            entity.Property(d => d.Estatus)
+                .HasDefaultValue(1)
+                .HasColumnName("estatus");
         });
 
         modelBuilder.Entity<TbPedido>(entity =>

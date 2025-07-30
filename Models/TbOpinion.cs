@@ -17,6 +17,7 @@ public partial class TbOpinion
     public string? Comentario { get; set; }
 
     public DateTime? Fecha { get; set; }
+    public int Estatus { get; set; }
 
     public virtual ApplicationUser Usuario { get; set; } = null!;
 
