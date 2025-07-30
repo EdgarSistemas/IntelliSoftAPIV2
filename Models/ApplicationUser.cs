@@ -11,7 +11,7 @@ namespace IntelliSoftAPIV2.Models
         [MaxLength(100)]
         public string Nombre { get; set; }
         [MaxLength(100)]
-        public string? Apellidos { get; set; } // ? significa que pueden ser nullos
+        public string? Apellidos { get; set; }
         public string? Direccion { get; set; }
         public DateTime fecha_registro { get; set; } = DateTime.UtcNow;
         public bool estatus { get; set; } = true;

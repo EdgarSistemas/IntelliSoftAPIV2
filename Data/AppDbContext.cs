@@ -35,8 +35,6 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public virtual DbSet<TbPedido> TbPedidos { get; set; }
 
-    public virtual DbSet<TbPedidoDetalle> TbPedidoDetalles { get; set; }
-
     public virtual DbSet<TbProducto> TbProductos { get; set; }
 
     public virtual DbSet<TbProductoInsumo> TbProductoInsumos { get; set; }
@@ -296,7 +294,11 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("TB_Pedido", "operaciones");
 
             entity.Property(e => e.IdPedido).HasColumnName("id_pedido");
-            entity.Property(e => e.UsuarioId).HasColumnName("cliente_id");
+            entity.Property(e => e.CotizacionId).HasColumnName("cotizacion_id");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.PrecioUnitario)
+                .HasColumnType("decimal(18, 2)")
+                .HasColumnName("precio_unitario");
             entity.Property(e => e.Estatus)
                 .HasMaxLength(100)
                 .IsUnicode(false)
@@ -304,39 +306,12 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(e => e.FechaPedido)
                 .HasColumnType("datetime")
                 .HasColumnName("fecha_pedido");
-            entity.Property(e => e.Total)
-                .HasColumnType("decimal(18, 2)")
-                .HasColumnName("total");
 
-            entity.HasOne(d => d.Usuario).WithMany(p => p.TbPedidos)
-                .HasForeignKey(d => d.UsuarioId)
+            entity.HasOne(d => d.Cotizacion)
+                .WithMany(p => p.TbPedidos)
+                .HasForeignKey(d => d.CotizacionId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TB_Pedido__clien__05D8E0BE");
-        });
-
-        modelBuilder.Entity<TbPedidoDetalle>(entity =>
-        {
-            entity.HasKey(e => e.IdPedidoDetalle).HasName("PK__TB_Pedid__392B2DE9C5CADE03");
-
-            entity.ToTable("TB_PedidoDetalle", "operaciones");
-
-            entity.Property(e => e.IdPedidoDetalle).HasColumnName("id_pedido_detalle");
-            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
-            entity.Property(e => e.PedidoId).HasColumnName("pedido_id");
-            entity.Property(e => e.PrecioUnitario)
-                .HasColumnType("decimal(18, 2)")
-                .HasColumnName("precio_unitario");
-            entity.Property(e => e.ProductoId).HasColumnName("producto_id");
-
-            entity.HasOne(d => d.Pedido).WithMany(p => p.TbPedidoDetalles)
-                .HasForeignKey(d => d.PedidoId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TB_Pedido__pedid__0A9D95DB");
-
-            entity.HasOne(d => d.Producto).WithMany(p => p.TbPedidoDetalles)
-                .HasForeignKey(d => d.ProductoId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__TB_Pedido__produ__0B91BA14");
+                .HasConstraintName("FK_TB_Pedido_Cotizacion");
         });
 
 

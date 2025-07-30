@@ -11,5 +11,6 @@ namespace IntelliSoftAPIV2.Dtos.Insumo
         public UnidadDto Unidad { get; set; }
         public int? Estatus { get; set; }
         public int? Existencias { get; set; }
+        public decimal? PrecioPromedio { get; set; }
     }
 }

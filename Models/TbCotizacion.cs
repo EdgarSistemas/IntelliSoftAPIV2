@@ -25,4 +25,6 @@ public partial class TbCotizacion
     public virtual ApplicationUser Usuario { get; set; }
 
     public virtual TbProducto? Producto { get; set; }
+
+    public virtual ICollection<TbPedido> TbPedidos { get; set; } = new List<TbPedido>();
 }
