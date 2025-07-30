@@ -12,5 +12,7 @@ public partial class TbComentario
     public DateTime? Fecha { get; set; }
 
     public string? UsuarioId { get; set; }
+
+    public int Estatus { get; set; }
     public virtual ApplicationUser Usuario { get; set; }
 }

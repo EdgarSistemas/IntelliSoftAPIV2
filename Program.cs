@@ -11,6 +11,8 @@ using IntelliSoftAPIV2.Services;
 using IntelliSoftAPIV2.Services.Proveedores;
 using IntelliSoftAPIV2.Services.Unidad;
 using IntelliSoftAPIV2.Services.Insumo;
+using IntelliSoftAPIV2.Services.Comentarios;
+using IntelliSoftAPIV2.Services.Opiniones;
 
 
 
@@ -76,6 +78,9 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UnidadService>();
 builder.Services.AddScoped<InsumoService>();
 builder.Services.AddScoped<IProveedorService, ProveedorService>();
+builder.Services.AddScoped<IComentarioService, ComentarioService>();
+builder.Services.AddScoped<IOpinionService, OpinionService>();
+
 
 
 builder.Services.AddControllers();
