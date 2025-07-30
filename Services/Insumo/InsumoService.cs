@@ -33,7 +33,17 @@ namespace IntelliSoftAPIV2.Services.Insumo
                         Simbolo = i.Unidad.Simbolo,
                         Descripcion = i.Unidad.Descripcion,
                         Estatus = i.Unidad.Estatus
-                    }
+                    },
+                    Existencias = _context.TbInventarioInsumos
+                        .Where(inv => inv.InsumoId == i.IdInsumo)
+                        .OrderByDescending(inv => inv.Fecha)
+                        .Select(inv => inv.Existencias)
+                        .FirstOrDefault(),
+                    PrecioPromedio = _context.TbInventarioInsumos
+                        .Where(inv => inv.InsumoId == i.IdInsumo)
+                        .OrderByDescending(inv => inv.Fecha)
+                        .Select(inv => (decimal?)inv.Promedio)
+                        .FirstOrDefault()
                 }).ToListAsync();
         }
 
@@ -44,6 +54,11 @@ namespace IntelliSoftAPIV2.Services.Insumo
                 .FirstOrDefaultAsync(x => x.IdInsumo == id);
 
             if (i == null) return null;
+
+            var inventario = await _context.TbInventarioInsumos
+                .Where(inv => inv.InsumoId == i.IdInsumo)
+                .OrderByDescending(inv => inv.Fecha)
+                .FirstOrDefaultAsync();
 
             return new InsumoDto
             {
@@ -59,7 +74,9 @@ namespace IntelliSoftAPIV2.Services.Insumo
                     Simbolo = i.Unidad.Simbolo,
                     Descripcion = i.Unidad.Descripcion,
                     Estatus = i.Unidad.Estatus
-                }
+                },
+                Existencias = inventario?.Existencias,
+                PrecioPromedio = inventario?.Promedio
             };
         }
 

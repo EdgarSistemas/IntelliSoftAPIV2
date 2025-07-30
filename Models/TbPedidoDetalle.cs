@@ -15,7 +15,7 @@ public partial class TbPedidoDetalle
 
     public decimal? PrecioUnitario { get; set; }
 
-    public virtual TbPedido Pedido { get; set; } = null!;
+    //public virtual TbPedido Pedido { get; set; } = null!;
 
-    public virtual TbProducto Producto { get; set; } = null!;
+    //public virtual TbProducto Producto { get; set; } = null!;
 }
