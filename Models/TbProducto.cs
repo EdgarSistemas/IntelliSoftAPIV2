@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using IntelliSoftAPIV2.Models;
 
 namespace IntelliSoftAPI.Models;
 
@@ -20,4 +21,5 @@ public partial class TbProducto
     public virtual ICollection<TbOpinion> TbOpiniones { get; set; } = new List<TbOpinion>();
 
     public virtual ICollection<TbProductoInsumo> TbProductoInsumos { get; set; } = new List<TbProductoInsumo>();
+    public virtual ICollection<TbDocumento> TbDocumentos { get; set; } = new List<TbDocumento>();
 }
