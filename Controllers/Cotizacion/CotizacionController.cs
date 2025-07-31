@@ -2,6 +2,7 @@
 using IntelliSoftAPIV2.Services.Cotizacion;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IntelliSoftAPIV2.Controllers.Cotizacion
@@ -17,6 +18,7 @@ namespace IntelliSoftAPIV2.Controllers.Cotizacion
             _cotizacionService = cotizacionService;
         }
 
+        // GET: api/cotizacion/resumen
         [HttpGet("resumen")]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> GetResumen()
@@ -25,12 +27,14 @@ namespace IntelliSoftAPIV2.Controllers.Cotizacion
             return Ok(result);
         }
 
+        // GET: api/cotizacion/{id}
         [HttpGet("{id}")]
         [Authorize]
         public async Task<IActionResult> GetCotizacion(int id)
         {
             var cot = await _cotizacionService.GetCotizacionById(id);
-            if (cot == null) return NotFound();
+            if (cot == null)
+                return NotFound("Cotización no encontrada");
             return Ok(cot);
         }
 
@@ -38,27 +42,43 @@ namespace IntelliSoftAPIV2.Controllers.Cotizacion
         [AllowAnonymous]
         public async Task<IActionResult> Crear([FromBody] CotizacionCreateDto dto)
         {
-            var success = await _cotizacionService.CrearCotizacion(dto);
-            if (!success) return BadRequest("Error al crear cotización");
-            return Ok(new { message = "Cotización registrada correctamente" });
+            var result = await _cotizacionService.CrearCotizacion(dto);
+            if (!result.Success)
+                return BadRequest(new { message = result.Message });
+
+            return Ok(new
+            {
+                message = result.Message,
+                clave = result.Data
+            });
         }
 
         [HttpPut("estado")]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> CambiarEstado([FromBody] CotizacionEstadoUpdateDto dto)
         {
-            var success = await _cotizacionService.ActualizarEstadoCotizacion(dto);
-            if (!success) return NotFound("Cotización no encontrada");
-            return Ok(new { message = "Estado actualizado correctamente" });
+            var result = await _cotizacionService.ActualizarEstadoCotizacion(dto);
+
+            if (!result.Success)
+                return NotFound(new { message = result.Message });
+
+            return result.Success
+                 ? Ok(new { success = true, message = result.Message })
+                 : BadRequest(new { success = false, message = result.Message });
         }
 
+        // POST: api/cotizacion/aceptar
         [HttpPost("aceptar")]
         [Authorize(Roles = "admin")]
         public async Task<IActionResult> Aceptar([FromBody] AceptarCotizacionDto dto)
         {
             var success = await _cotizacionService.AceptarCotizacion(dto);
-            if (!success) return BadRequest("No se pudo aceptar la cotización");
-            return Ok(new { message = "Cotización aceptada y pedido generado" });
+            if (!success.Success)
+                return BadRequest("No se pudo aceptar la cotización");
+
+            return success.Success
+                 ? Ok(new { success = true, message = success.Message })
+                 : BadRequest(new { success = false, message = success.Message });
         }
     }
 
