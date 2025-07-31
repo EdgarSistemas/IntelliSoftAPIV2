@@ -29,7 +29,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public virtual DbSet<TbInventarioInsumo> TbInventarioInsumos { get; set; }
 
-
+    public virtual DbSet<TbCotizacionDetalle> TbCotizacionDetalles { get; set; }
 
     public virtual DbSet<TbOpinion> TbOpiniones { get; set; }
 
@@ -159,33 +159,40 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("TB_Cotizaciones", "operaciones");
 
             entity.Property(e => e.IdCotizaciones).HasColumnName("id_cotizaciones");
-            entity.Property(e => e.UsuarioId).HasColumnName("cliente_id");
-            entity.Property(e => e.DetalleCotizacion)
-                .HasMaxLength(200)
-                .IsUnicode(false)
-                .HasColumnName("detalle_cotizacion");
-            entity.Property(e => e.EmailSolicitante)
-                .HasMaxLength(255)
-                .IsUnicode(false)
-                .HasColumnName("email_solicitante");
-            entity.Property(e => e.EstadoSolicitud)
-                .HasMaxLength(100)
-                .IsUnicode(false)
-                .HasColumnName("estado_solicitud");
+
+            entity.Property(e => e.ClaveCotizacion)
+              .HasMaxLength(65)
+              .HasColumnName("clave_cotizacion");
+
+            entity.Property(e => e.UsuarioId)
+                .HasColumnName("cliente_id");
+
+            entity.Property(e => e.ProductoId).HasColumnName("producto_id");
+
             entity.Property(e => e.FechaSolicitud)
                 .HasColumnType("datetime")
                 .HasColumnName("fecha_solicitud");
-            entity.Property(e => e.NombreSolicitante)
-                .HasMaxLength(150)
-                .IsUnicode(false)
-                .HasColumnName("nombre_solicitante");
-            entity.Property(e => e.ProductoId).HasColumnName("producto_id");
 
-            entity.HasOne(d => d.Usuario).WithMany(p => p.TbCotizaciones)
+            entity.Property(e => e.Estatus)
+                .HasColumnName("estado_solicitud")
+                .HasDefaultValue(1); // ahora es INT
+
+            entity.Property(e => e.DetalleCotizacion)
+                .HasColumnName("detalle_cotizacion")
+                .HasMaxLength(200)
+                .IsUnicode(false);
+
+            entity.Property(e => e.Hectareas)
+                .HasColumnName("hectareas")
+                .HasColumnType("decimal(10, 2)");
+
+            entity.HasOne(d => d.Usuario)
+                .WithMany(p => p.TbCotizaciones)
                 .HasForeignKey(d => d.UsuarioId)
                 .HasConstraintName("FK__TB_Cotiza__clien__07C12930");
 
-            entity.HasOne(d => d.Producto).WithMany(p => p.TbCotizaciones)
+            entity.HasOne(d => d.Producto)
+                .WithMany(p => p.TbCotizaciones)
                 .HasForeignKey(d => d.ProductoId)
                 .HasConstraintName("FK__TB_Cotiza__produ__06CD04F7");
         });
@@ -303,18 +310,16 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("TB_Pedido", "operaciones");
 
             entity.Property(e => e.IdPedido).HasColumnName("id_pedido");
+
             entity.Property(e => e.CotizacionId).HasColumnName("cotizacion_id");
-            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
-            entity.Property(e => e.PrecioUnitario)
-                .HasColumnType("decimal(18, 2)")
-                .HasColumnName("precio_unitario");
-            entity.Property(e => e.Estatus)
-                .HasMaxLength(100)
-                .IsUnicode(false)
-                .HasColumnName("estatus");
+
             entity.Property(e => e.FechaPedido)
                 .HasColumnType("datetime")
                 .HasColumnName("fecha_pedido");
+
+            entity.Property(e => e.Estatus)
+                .HasColumnName("estatus")
+                .HasDefaultValue(1);
 
             entity.HasOne(d => d.Cotizacion)
                 .WithMany(p => p.TbPedidos)
@@ -401,6 +406,40 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
                 .HasColumnName("telefono");
         });
 
+        modelBuilder.Entity<TbCotizacionDetalle>(entity =>
+        {
+            entity.HasKey(e => e.IdCotizacionDetalle).HasName("PK__TB_Cotiz__E4E55C7A");
+
+            entity.ToTable("TB_CotizacionDetalle", "operaciones");
+
+            entity.Property(e => e.IdCotizacionDetalle).HasColumnName("id_cotizacion_detalle");
+
+            entity.Property(e => e.CotizacionId).HasColumnName("cotizacion_id");
+
+            entity.Property(e => e.InsumoId).HasColumnName("insumo_id");
+
+            entity.Property(e => e.Cantidad)
+                .HasColumnName("cantidad")
+                .HasColumnType("decimal(10, 2)");
+
+            entity.Property(e => e.PrecioPromedio)
+                .HasColumnName("precio_promedio")
+                .HasColumnType("decimal(18, 2)");
+
+            entity.HasOne(d => d.Cotizacion)
+                .WithMany(p => p.Detalles)
+                .HasForeignKey(d => d.CotizacionId)
+                .OnDelete(DeleteBehavior.Cascade)
+                .HasConstraintName("FK_CotizacionDetalle_Cotizacion");
+
+            entity.HasOne(d => d.Insumo)
+                .WithMany()
+                .HasForeignKey(d => d.InsumoId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CotizacionDetalle_Insumo");
+        });
+
+
         modelBuilder.Entity<TbDocumento>(entity => 
         {
             entity.HasKey(e => e.IdDocumento).HasName("PK_TB_Documento_IdDocumento");
@@ -417,6 +456,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasColumnName("url");
         });
        
+
 
         OnModelCreatingPartial(modelBuilder);
     }

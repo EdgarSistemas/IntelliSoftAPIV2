@@ -67,5 +67,21 @@ namespace IntelliSoftAPIV2.Controllers.Auth
             if (!success) return NotFound("Usuario no encontrado");
             return Ok(new { message = "Usuario eliminado correctamente" });
         }
+
+        [HttpPost("anonimo-verificar-o-crear")]
+        public async Task<IActionResult> VerificarOCrearAnonimo([FromBody] RegisterDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Nombre))
+                return BadRequest(new { message = "Email y Nombre son requeridos" });
+
+            var result = await _authService.ObtenerOCrearAnonimoPorEmail(dto.Email, dto.Nombre, dto.Apellidos);
+
+            return Ok(new
+            {
+                creado = result.Message.Contains("creado"),
+                usuario = result.Data,
+                message = result.Message
+            });
+        }
     }
 }

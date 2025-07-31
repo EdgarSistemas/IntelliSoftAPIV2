@@ -4,6 +4,7 @@ using IntelliSoftAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IntelliSoftAPIV2.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250730104407_UpdateModelsPedidoCotizacion")]
+    partial class UpdateModelsPedidoCotizacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -187,11 +190,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasColumnName("id_cotizaciones");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCotizaciones"));
-
-                    b.Property<string>("ClaveCotizacion")
-                        .HasMaxLength(65)
-                        .HasColumnType("nvarchar(65)")
-                        .HasColumnName("clave_cotizacion");
 
                     b.Property<string>("DetalleCotizacion")
                         .HasMaxLength(200)
@@ -625,41 +623,6 @@ namespace IntelliSoftAPIV2.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("IntelliSoftAPIV2.Models.TbDocumento", b =>
-                {
-                    b.Property<int>("IdDocumento")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdDocumento"));
-
-                    b.Property<int>("IdProducto")
-                        .HasColumnType("int")
-                        .HasColumnName("id_producto");
-
-                    b.Property<string>("NombreDocumento")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .IsUnicode(false)
-                        .HasColumnType("varchar(500)")
-                        .HasColumnName("nombre_columna");
-
-                    b.Property<int?>("ProductoIdProductos")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Url")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)")
-                        .HasColumnName("url");
-
-                    b.HasKey("IdDocumento")
-                        .HasName("PK_TB_Documento_IdDocumento");
-
-                    b.HasIndex("ProductoIdProductos");
-
-                    b.ToTable("TB_Documento", "catalogos");
-                });
-
             modelBuilder.Entity("IntelliSoftAPIV2.Models.TbCotizacionDetalle", b =>
                 {
                     b.Property<int>("IdCotizacionDetalle")
@@ -970,15 +933,6 @@ namespace IntelliSoftAPIV2.Migrations
                     b.Navigation("Producto");
                 });
 
-            modelBuilder.Entity("IntelliSoftAPIV2.Models.TbDocumento", b =>
-                {
-                    b.HasOne("IntelliSoftAPI.Models.TbProducto", "Producto")
-                        .WithMany("TbDocumentos")
-                        .HasForeignKey("ProductoIdProductos");
-
-                    b.Navigation("Producto");
-                });
-
             modelBuilder.Entity("IntelliSoftAPIV2.Models.TbCotizacionDetalle", b =>
                 {
                     b.HasOne("IntelliSoftAPI.Models.TbCotizacion", "Cotizacion")
@@ -1086,8 +1040,6 @@ namespace IntelliSoftAPIV2.Migrations
             modelBuilder.Entity("IntelliSoftAPI.Models.TbProducto", b =>
                 {
                     b.Navigation("TbCotizaciones");
-
-                    b.Navigation("TbDocumentos");
 
                     b.Navigation("TbOpiniones");
 
