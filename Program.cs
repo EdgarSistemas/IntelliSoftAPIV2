@@ -14,6 +14,8 @@ using IntelliSoftAPIV2.Services.Insumo;
 using IntelliSoftAPIV2.Services.Comentarios;
 using IntelliSoftAPIV2.Services.Opiniones;
 using IntelliSoftAPIV2.Services.Compra;
+using IntelliSoftAPIV2.Services.Producto;
+using IntelliSoftAPIV2.Services.Cotizacion;
 
 
 
@@ -82,6 +84,8 @@ builder.Services.AddScoped<CompraService>();
 builder.Services.AddScoped<IProveedorService, ProveedorService>();
 builder.Services.AddScoped<IComentarioService, ComentarioService>();
 builder.Services.AddScoped<IOpinionService, OpinionService>();
+builder.Services.AddScoped<ProductoService>();
+builder.Services.AddScoped<CotizacionService>();
 
 
 

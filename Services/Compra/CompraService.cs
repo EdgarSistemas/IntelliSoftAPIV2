@@ -35,7 +35,7 @@ namespace IntelliSoftAPIV2.Services.Compra
                     Cantidad = detalle.Cantidad
                 });
             }
-
+            
             _context.TbCompras.Add(compra);
             await _context.SaveChangesAsync();
 
