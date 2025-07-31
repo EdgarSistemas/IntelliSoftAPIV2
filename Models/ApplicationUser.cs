@@ -11,7 +11,7 @@ namespace IntelliSoftAPIV2.Models
         [MaxLength(100)]
         public string Nombre { get; set; }
         [MaxLength(100)]
-        public string? Apellidos { get; set; } // ? significa que pueden ser nullos
+        public string? Apellidos { get; set; }
         public string? Direccion { get; set; }
         public string? PhoneNumber {  get; set; }
         public DateTime fecha_registro { get; set; } = DateTime.UtcNow;
@@ -23,7 +23,6 @@ namespace IntelliSoftAPIV2.Models
         public virtual ICollection<TbComentario> TbComentarios { get; set; }
         public virtual ICollection<TbCotizacion> TbCotizaciones { get; set; }
         public virtual ICollection<TbOpinion> TbOpiniones { get; set; }
-        public virtual ICollection<TbPedido> TbPedidos { get; set; }
 
     }
 }

@@ -1,24 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 using IntelliSoftAPIV2.Models;
 
 namespace IntelliSoftAPI.Models;
 
 public partial class TbPedido
 {
+    [Key]
+    [Column("id_pedido")]
     public int IdPedido { get; set; }
 
-    public string? UsuarioId { get; set; }
+    [Column("cotizacion_id")]
+    public int CotizacionId { get; set; }
 
+    [Column("fecha_pedido")]
     public DateTime? FechaPedido { get; set; }
 
-    public decimal? Total { get; set; }
+    [Column("estatus")]
+    public int Estatus { get; set; } = 1;
 
-    public string? Estatus { get; set; }
-
-    public virtual ApplicationUser Usuario { get; set; }
-
+    public virtual TbCotizacion Cotizacion { get; set; } = null!;
     public virtual ICollection<TbInventarioInsumo> TbInventarioInsumos { get; set; } = new List<TbInventarioInsumo>();
-
-    public virtual ICollection<TbPedidoDetalle> TbPedidoDetalles { get; set; } = new List<TbPedidoDetalle>();
 }

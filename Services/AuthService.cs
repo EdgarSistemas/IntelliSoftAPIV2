@@ -137,6 +137,65 @@ namespace IntelliSoftAPIV2.Services
             var result = await _userManager.DeleteAsync(user);
             return result.Succeeded;
         }
+
+        public async Task<ServiceResult<RegisterDto?>> ObtenerOCrearAnonimoPorEmail(string email, string nombre, string apellidos)
+        {
+            var user = await _userManager.FindByEmailAsync(email);
+
+            // si ya existe
+            if (user != null)
+            {
+                var roles = await _userManager.GetRolesAsync(user);
+                var rol = roles.FirstOrDefault();
+
+                if (rol != "anonimo")
+                    return ServiceResult<RegisterDto?>.CreateSuccess(null, "El usuario ya existe pero no es anónimo");
+
+                var dtoExistente = new RegisterDto
+                {
+                    Nombre = user.Nombre,
+                    Apellidos = user.Apellidos,
+                    Email = user.Email,
+                    Password = "",
+                    Rol = "anonimo"
+                };
+
+                return ServiceResult<RegisterDto?>.CreateSuccess(dtoExistente, "Usuario anónimo existente");
+            }
+
+            // crear nuevo usuario anónimo
+            var nuevoUsuario = new ApplicationUser
+            {
+                Nombre = nombre,
+                Apellidos = apellidos,
+                Email = email,
+                UserName = email,
+                EmailConfirmed = true
+            };
+
+            string contrasenaGenerada = Guid.NewGuid().ToString("N").Substring(0, 8) + "!";
+
+            var result = await _userManager.CreateAsync(nuevoUsuario, contrasenaGenerada);
+            if (!result.Succeeded)
+                return ServiceResult<RegisterDto?>.Failure("Error al crear el usuario anónimo");
+
+            // Asignar rol anónimo
+            if (!await _roleManager.RoleExistsAsync("anonimo"))
+                await _roleManager.CreateAsync(new IdentityRole("anonimo"));
+
+            await _userManager.AddToRoleAsync(nuevoUsuario, "anonimo");
+
+            var dtoNuevo = new RegisterDto
+            {
+                Nombre = nuevoUsuario.Nombre,
+                Apellidos = nuevoUsuario.Apellidos,
+                Email = nuevoUsuario.Email,
+                Password = "",
+                Rol = "anonimo"
+            };
+
+            return ServiceResult<RegisterDto?>.CreateSuccess(dtoNuevo, "Usuario anónimo creado correctamente");
+        }
     }
 
 

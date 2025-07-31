@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IntelliSoftAPIV2.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250729083729_FixIdInventarioInsumo")]
-    partial class FixIdInventarioInsumo
+    [Migration("20250729224614_nuevasColumnasEstatus")]
+    partial class nuevasColumnasEstatus
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -71,6 +71,12 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasColumnName("id_comentario");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdComentario"));
+
+                    b.Property<int>("Estatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1)
+                        .HasColumnName("estatus");
 
                     b.Property<DateTime?>("Fecha")
                         .HasColumnType("datetime")
@@ -275,11 +281,8 @@ namespace IntelliSoftAPIV2.Migrations
             modelBuilder.Entity("IntelliSoftAPI.Models.TbInventarioInsumo", b =>
                 {
                     b.Property<int>("IdInventarioInsumo")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int")
                         .HasColumnName("id_inventario_insumo");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdInventarioInsumo"));
 
                     b.Property<int?>("CompraId")
                         .HasColumnType("int")
@@ -359,6 +362,12 @@ namespace IntelliSoftAPIV2.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(1000)")
                         .HasColumnName("comentario");
+
+                    b.Property<int>("Estatus")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1)
+                        .HasColumnName("estatus");
 
                     b.Property<DateTime?>("Fecha")
                         .HasColumnType("datetime")

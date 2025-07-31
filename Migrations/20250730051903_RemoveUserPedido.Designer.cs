@@ -4,6 +4,7 @@ using IntelliSoftAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IntelliSoftAPIV2.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250730051903_RemoveUserPedido")]
+    partial class RemoveUserPedido
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -68,12 +71,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasColumnName("id_comentario");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdComentario"));
-
-                    b.Property<int>("Estatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("estatus");
 
                     b.Property<DateTime?>("Fecha")
                         .HasColumnType("datetime")
@@ -188,30 +185,33 @@ namespace IntelliSoftAPIV2.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCotizaciones"));
 
-                    b.Property<string>("ClaveCotizacion")
-                        .HasMaxLength(65)
-                        .HasColumnType("nvarchar(65)")
-                        .HasColumnName("clave_cotizacion");
-
                     b.Property<string>("DetalleCotizacion")
                         .HasMaxLength(200)
                         .IsUnicode(false)
                         .HasColumnType("varchar(200)")
                         .HasColumnName("detalle_cotizacion");
 
-                    b.Property<int>("Estatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
+                    b.Property<string>("EmailSolicitante")
+                        .HasMaxLength(255)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(255)")
+                        .HasColumnName("email_solicitante");
+
+                    b.Property<string>("EstadoSolicitud")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(100)")
                         .HasColumnName("estado_solicitud");
 
                     b.Property<DateTime?>("FechaSolicitud")
                         .HasColumnType("datetime")
                         .HasColumnName("fecha_solicitud");
 
-                    b.Property<decimal>("Hectareas")
-                        .HasColumnType("decimal(10, 2)")
-                        .HasColumnName("hectareas");
+                    b.Property<string>("NombreSolicitante")
+                        .HasMaxLength(150)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(150)")
+                        .HasColumnName("nombre_solicitante");
 
                     b.Property<int?>("ProductoId")
                         .HasColumnType("int")
@@ -360,12 +360,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasColumnType("varchar(1000)")
                         .HasColumnName("comentario");
 
-                    b.Property<int>("Estatus")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(1)
-                        .HasColumnName("estatus");
-
                     b.Property<DateTime?>("Fecha")
                         .HasColumnType("datetime")
                         .HasColumnName("fecha");
@@ -397,19 +391,27 @@ namespace IntelliSoftAPIV2.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdPedido"));
 
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("int")
+                        .HasColumnName("cantidad");
+
                     b.Property<int>("CotizacionId")
                         .HasColumnType("int")
                         .HasColumnName("cotizacion_id");
 
-                    b.Property<int>("Estatus")
-                        .ValueGeneratedOnAdd()
+                    b.Property<int?>("Estatus")
+                        .HasMaxLength(100)
+                        .IsUnicode(false)
                         .HasColumnType("int")
-                        .HasDefaultValue(1)
                         .HasColumnName("estatus");
 
                     b.Property<DateTime?>("FechaPedido")
                         .HasColumnType("datetime")
                         .HasColumnName("fecha_pedido");
+
+                    b.Property<decimal>("PrecioUnitario")
+                        .HasColumnType("decimal(18, 2)")
+                        .HasColumnName("precio_unitario");
 
                     b.HasKey("IdPedido")
                         .HasName("PK__TB_Pedid__6FF01489CC0F52C0");
@@ -433,10 +435,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .IsUnicode(false)
                         .HasColumnType("varchar(200)")
                         .HasColumnName("descripcion");
-
-                    b.Property<int>("Estatus")
-                        .HasColumnType("int")
-                        .HasColumnName("estatus");
 
                     b.Property<decimal?>("HectareaBase")
                         .HasColumnType("decimal(10, 2)")
@@ -623,41 +621,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-                });
-
-            modelBuilder.Entity("IntelliSoftAPIV2.Models.TbCotizacionDetalle", b =>
-                {
-                    b.Property<int>("IdCotizacionDetalle")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasColumnName("id_cotizacion_detalle");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCotizacionDetalle"));
-
-                    b.Property<decimal>("Cantidad")
-                        .HasColumnType("decimal(10, 2)")
-                        .HasColumnName("cantidad");
-
-                    b.Property<int>("CotizacionId")
-                        .HasColumnType("int")
-                        .HasColumnName("cotizacion_id");
-
-                    b.Property<int>("InsumoId")
-                        .HasColumnType("int")
-                        .HasColumnName("insumo_id");
-
-                    b.Property<decimal>("PrecioPromedio")
-                        .HasColumnType("decimal(18, 2)")
-                        .HasColumnName("precio_promedio");
-
-                    b.HasKey("IdCotizacionDetalle")
-                        .HasName("PK__TB_Cotiz__E4E55C7A");
-
-                    b.HasIndex("CotizacionId");
-
-                    b.HasIndex("InsumoId");
-
-                    b.ToTable("TB_CotizacionDetalle", "operaciones");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -935,26 +898,6 @@ namespace IntelliSoftAPIV2.Migrations
                     b.Navigation("Producto");
                 });
 
-            modelBuilder.Entity("IntelliSoftAPIV2.Models.TbCotizacionDetalle", b =>
-                {
-                    b.HasOne("IntelliSoftAPI.Models.TbCotizacion", "Cotizacion")
-                        .WithMany("Detalles")
-                        .HasForeignKey("CotizacionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_CotizacionDetalle_Cotizacion");
-
-                    b.HasOne("IntelliSoftAPI.Models.TbInsumo", "Insumo")
-                        .WithMany()
-                        .HasForeignKey("InsumoId")
-                        .IsRequired()
-                        .HasConstraintName("FK_CotizacionDetalle_Insumo");
-
-                    b.Navigation("Cotizacion");
-
-                    b.Navigation("Insumo");
-                });
-
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -1020,8 +963,6 @@ namespace IntelliSoftAPIV2.Migrations
 
             modelBuilder.Entity("IntelliSoftAPI.Models.TbCotizacion", b =>
                 {
-                    b.Navigation("Detalles");
-
                     b.Navigation("TbPedidos");
                 });
 

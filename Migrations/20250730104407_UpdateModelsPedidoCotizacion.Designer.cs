@@ -4,6 +4,7 @@ using IntelliSoftAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IntelliSoftAPIV2.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250730104407_UpdateModelsPedidoCotizacion")]
+    partial class UpdateModelsPedidoCotizacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -187,11 +190,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasColumnName("id_cotizaciones");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IdCotizaciones"));
-
-                    b.Property<string>("ClaveCotizacion")
-                        .HasMaxLength(65)
-                        .HasColumnType("nvarchar(65)")
-                        .HasColumnName("clave_cotizacion");
 
                     b.Property<string>("DetalleCotizacion")
                         .HasMaxLength(200)

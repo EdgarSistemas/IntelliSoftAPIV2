@@ -5,20 +5,26 @@
 namespace IntelliSoftAPIV2.Migrations
 {
     /// <inheritdoc />
-    public partial class FixIdInventarioInsumo : Migration
+    public partial class nuevasColumnasEstatus : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<int>(
-                name: "id_inventario_insumo",
-                schema: "almacen",
-                table: "TB_InventarioInsumo",
+            migrationBuilder.AddColumn<int>(
+                name: "estatus",
+                schema: "operaciones",
+                table: "TB_Opiniones",
                 type: "int",
                 nullable: false,
-                oldClrType: typeof(int),
-                oldType: "int")
-                .Annotation("SqlServer:Identity", "1, 1");
+                defaultValue: 1);
+
+            migrationBuilder.AddColumn<int>(
+                name: "estatus",
+                schema: "seguridad",
+                table: "TB_Comentarios",
+                type: "int",
+                nullable: false,
+                defaultValue: 1);
 
             migrationBuilder.AlterColumn<string>(
                 name: "nombre",
@@ -39,15 +45,15 @@ namespace IntelliSoftAPIV2.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AlterColumn<int>(
-                name: "id_inventario_insumo",
-                schema: "almacen",
-                table: "TB_InventarioInsumo",
-                type: "int",
-                nullable: false,
-                oldClrType: typeof(int),
-                oldType: "int")
-                .OldAnnotation("SqlServer:Identity", "1, 1");
+            migrationBuilder.DropColumn(
+                name: "estatus",
+                schema: "operaciones",
+                table: "TB_Opiniones");
+
+            migrationBuilder.DropColumn(
+                name: "estatus",
+                schema: "seguridad",
+                table: "TB_Comentarios");
 
             migrationBuilder.AlterColumn<string>(
                 name: "nombre",

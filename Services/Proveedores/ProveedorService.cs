@@ -15,6 +15,7 @@ namespace IntelliSoftAPIV2.Services.Proveedores
         public async Task<List<ProveedorResponseDto>> ObtenerTodosAsync()
         {
             return await _context.TbProveedors
+                .Where(p => p.Estatus == 1)
                 .Select(p => new ProveedorResponseDto
                 {
                     IdProveedor = p.IdProveedor,
@@ -95,7 +96,8 @@ namespace IntelliSoftAPIV2.Services.Proveedores
             if (proveedor == null)
                 return ServiceResult<string>.Failure("Proveedor no encontrado");
 
-            _context.TbProveedors.Remove(proveedor);
+            proveedor.Estatus = 0;
+            _context.TbProveedors.Update(proveedor);
             await _context.SaveChangesAsync();
 
             return ServiceResult<string>.CreateSuccess("Proveedor eliminado correctamente");

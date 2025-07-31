@@ -38,6 +38,11 @@ namespace IntelliSoftAPIV2.Services.Insumo
                         .Where(inv => inv.InsumoId == i.IdInsumo)
                         .OrderByDescending(inv => inv.Fecha)
                         .Select(inv => inv.Existencias)
+                        .FirstOrDefault(),
+                    PrecioPromedio = _context.TbInventarioInsumos
+                        .Where(inv => inv.InsumoId == i.IdInsumo)
+                        .OrderByDescending(inv => inv.Fecha)
+                        .Select(inv => (decimal?)inv.Promedio)
                         .FirstOrDefault()
                 }).ToListAsync();
         }
@@ -50,10 +55,9 @@ namespace IntelliSoftAPIV2.Services.Insumo
 
             if (i == null) return null;
 
-            var existencias = await _context.TbInventarioInsumos
+            var inventario = await _context.TbInventarioInsumos
                 .Where(inv => inv.InsumoId == i.IdInsumo)
                 .OrderByDescending(inv => inv.Fecha)
-                .Select(inv => inv.Existencias)
                 .FirstOrDefaultAsync();
 
             return new InsumoDto
@@ -63,7 +67,6 @@ namespace IntelliSoftAPIV2.Services.Insumo
                 Descripcion = i.Descripcion,
                 UnidadId = i.UnidadId,
                 Estatus = i.Estatus,
-                Existencias = existencias,
                 Unidad = new UnidadDto
                 {
                     IdUnidad = i.Unidad.IdUnidad,
@@ -71,7 +74,9 @@ namespace IntelliSoftAPIV2.Services.Insumo
                     Simbolo = i.Unidad.Simbolo,
                     Descripcion = i.Unidad.Descripcion,
                     Estatus = i.Unidad.Estatus
-                }
+                },
+                Existencias = inventario?.Existencias,
+                PrecioPromedio = inventario?.Promedio
             };
         }
 
