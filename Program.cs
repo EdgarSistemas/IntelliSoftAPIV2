@@ -16,6 +16,8 @@ using IntelliSoftAPIV2.Services.Opiniones;
 using IntelliSoftAPIV2.Services.Compra;
 using IntelliSoftAPIV2.Services.Producto;
 using IntelliSoftAPIV2.Services.Cotizacion;
+using IntelliSoftAPIV2.Services.Pedidos;
+using IntelliSoftAPIV2.Services.Dashboard;
 
 
 
@@ -86,6 +88,9 @@ builder.Services.AddScoped<IComentarioService, ComentarioService>();
 builder.Services.AddScoped<IOpinionService, OpinionService>();
 builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<CotizacionService>();
+builder.Services.AddScoped<IPedidoService, PedidoService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
 
 
 

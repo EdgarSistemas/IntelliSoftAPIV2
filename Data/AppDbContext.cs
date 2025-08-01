@@ -446,7 +446,7 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
             entity.ToTable("TB_Documento", "catalogos");
 
-            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.IdProductos).HasColumnName("id_producto");
             entity.Property(e => e.NombreDocumento)
             .HasMaxLength(500)
             .IsUnicode(false)

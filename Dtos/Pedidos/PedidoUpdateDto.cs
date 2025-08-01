@@ -2,5 +2,7 @@
 {
     public class PedidoUpdateDto
     {
+        public int Estatus { get; set; }
+
     }
 }
