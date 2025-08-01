@@ -21,13 +21,15 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
         {
             return await _context.TbCotizaciones
                 .Include(c => c.Usuario)
+                .Include(c => c.Detalles)
                 .Select(c => new CotizacionResumenDto
                 {
                     IdCotizacion = c.IdCotizaciones,
                     ClaveCotizacion = c.ClaveCotizacion,
                     FechaSolicitud = c.FechaSolicitud ?? DateTime.MinValue,
                     EstadoSolicitud = c.Estatus,
-                    NombreCliente = c.Usuario.Nombre + " " + c.Usuario.Apellidos
+                    NombreCliente = c.Usuario.Nombre + " " + c.Usuario.Apellidos,
+                    Total = c.Detalles.Sum(d => d.Cantidad * d.PrecioPromedio)
                 })
                 .ToListAsync();
         }
@@ -60,16 +62,31 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             };
         }
 
-        public async Task<bool> CrearCotizacion(CotizacionCreateDto dto)
+        public async Task<ServiceResult<string>> CrearCotizacion(CotizacionCreateDto dto)
         {
             var usuario = await _userManager.FindByIdAsync(dto.UsuarioId);
-            if (usuario == null) return false;
+            if (usuario == null)
+                return ServiceResult<string>.Failure("Usuario no encontrado");
 
+            // Obtener producto y su receta
+            var producto = await _context.TbProductos
+                .Include(p => p.TbProductoInsumos)
+                .FirstOrDefaultAsync(p => p.IdProductos == dto.ProductoId);
+
+            if (producto == null || producto.HectareaBase <= 0 || producto.TbProductoInsumos.Count == 0)
+                return ServiceResult<string>.Failure("Producto inválido o sin receta");
+
+            // Generar clave
+            var clave = GenerarClaveCotizacion();
+
+            // Crear cotización
             var cotizacion = new TbCotizacion
             {
-                ClaveCotizacion = GenerarClaveCotizacion(),
+                ClaveCotizacion = clave,
                 UsuarioId = dto.UsuarioId,
+                ProductoId = dto.ProductoId,
                 Hectareas = dto.Hectareas,
+                DetalleCotizacion = dto.DetalleCotizacion,
                 FechaSolicitud = DateTime.UtcNow,
                 Estatus = 1
             };
@@ -77,41 +94,61 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             _context.TbCotizaciones.Add(cotizacion);
             await _context.SaveChangesAsync();
 
-            foreach (var detalle in dto.Detalles)
+            var factorEscala = dto.Hectareas / producto.HectareaBase;
+
+            foreach (var receta in producto.TbProductoInsumos)
             {
-                _context.TbCotizacionDetalles.Add(new TbCotizacionDetalle
+                var insumoId = receta.InsumoId;
+                var cantidadEscalada = receta.Cantidad * factorEscala;
+
+                var inventario = await _context.TbInventarioInsumos
+                    .Where(i => i.InsumoId == insumoId)
+                    .OrderByDescending(i => i.Fecha)
+                    .FirstOrDefaultAsync();
+
+                var precioPromedio = inventario?.Promedio ?? 0;
+
+                var detalle = new TbCotizacionDetalle
                 {
                     CotizacionId = cotizacion.IdCotizaciones,
-                    InsumoId = detalle.InsumoId,
-                    Cantidad = detalle.Cantidad,
-                    PrecioPromedio = detalle.PrecioPromedio
-                });
+                    InsumoId = insumoId ?? 0,
+                    Cantidad = Math.Round(cantidadEscalada ?? 0, 2),
+                    PrecioPromedio = Math.Round(precioPromedio, 2)
+                };
+
+                _context.TbCotizacionDetalles.Add(detalle);
             }
 
             await _context.SaveChangesAsync();
-            return true;
+
+            return ServiceResult<string>.CreateSuccess(clave, "Cotización registrada correctamente");
         }
 
-        public async Task<bool> ActualizarEstadoCotizacion(CotizacionEstadoUpdateDto dto)
+        public async Task<ServiceResult<string>> ActualizarEstadoCotizacion(CotizacionEstadoUpdateDto dto)
         {
             var cotizacion = await _context.TbCotizaciones.FindAsync(dto.IdCotizacion);
-            if (cotizacion == null) return false;
+            if (cotizacion == null)
+                return ServiceResult<string>.Failure("Cotización no encontrada");
 
             cotizacion.Estatus = dto.NuevoEstado;
             await _context.SaveChangesAsync();
-            return true;
+
+            return ServiceResult<string>.CreateSuccess(
+                data: "Estatus de la cotización actualizado correctamente",
+                message: "Estatus de la cotización actualizado correctamente"
+            );
         }
 
-        public async Task<bool> AceptarCotizacion(AceptarCotizacionDto dto)
+        public async Task<ServiceResult<string>> AceptarCotizacion(AceptarCotizacionDto dto)
         {
             var cotizacion = await _context.TbCotizaciones
                 .Include(c => c.Usuario)
                 .Include(c => c.Detalles)
                 .FirstOrDefaultAsync(c => c.IdCotizaciones == dto.IdCotizacion);
 
-            if (cotizacion == null || cotizacion.Estatus != 1) return false;
+            if (cotizacion == null || cotizacion.Estatus != 1)
+                return ServiceResult<string>.Failure("Cotización no encontrada o ya procesada");
 
-            // Crear pedido
             var pedido = new TbPedido
             {
                 CotizacionId = cotizacion.IdCotizaciones,
@@ -122,7 +159,6 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             _context.TbPedidos.Add(pedido);
             cotizacion.Estatus = 2;
 
-            // Cambiar rol si es anónimo
             var usuario = cotizacion.Usuario;
             var roles = await _userManager.GetRolesAsync(usuario);
             if (roles.Contains("anonimo"))
@@ -133,7 +169,11 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             }
 
             await _context.SaveChangesAsync();
-            return true;
+
+            return ServiceResult<string>.CreateSuccess(
+                data: "Cotización aceptada correctamente",
+                message: "Cotización aceptada correctamente"
+            );
         }
 
         private string GenerarClaveCotizacion()
