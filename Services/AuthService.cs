@@ -171,9 +171,7 @@ namespace IntelliSoftAPIV2.Services
                 EmailConfirmed = true
             };
 
-            string baseContrasena = Guid.NewGuid().ToString("N").Substring(0, 8);
-            string contrasenaConMayuscula = char.ToUpper(baseContrasena[0]) + baseContrasena.Substring(1);
-            string contrasenaGenerada = contrasenaConMayuscula + "!";
+            string contrasenaGenerada = GenerarContrasenaSegura(8);
 
             var result = await _userManager.CreateAsync(nuevoUsuario, contrasenaGenerada);
             if (!result.Succeeded)
@@ -195,6 +193,36 @@ namespace IntelliSoftAPIV2.Services
             };
 
             return ServiceResult<RegisterDto?>.CreateSuccess(dtoNuevo, "Usuario anónimo creado correctamente");
+        }
+
+        private static string GenerarContrasenaSegura(int longitud = 8)
+        {
+            if (longitud < 6) longitud = 6;
+
+            var random = new Random();
+            const string mayusculas = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            const string minusculas = "abcdefghijklmnopqrstuvwxyz";
+            const string numeros = "0123456789";
+            const string simbolos = "!@#$%^&*()-_=+[]{}|;:,.<>?";
+
+            // Garantizar al menos uno de cada tipo
+            var passwordChars = new List<char>
+            {
+                mayusculas[random.Next(mayusculas.Length)],
+                minusculas[random.Next(minusculas.Length)],
+                numeros[random.Next(numeros.Length)],
+                simbolos[random.Next(simbolos.Length)]
+            };
+
+            // Rellenar el resto con todos los tipos
+            string todos = mayusculas + minusculas + numeros + simbolos;
+            for (int i = passwordChars.Count; i < longitud; i++)
+                passwordChars.Add(todos[random.Next(todos.Length)]);
+
+            // Mezclar los caracteres
+            passwordChars = passwordChars.OrderBy(x => random.Next()).ToList();
+
+            return new string(passwordChars.ToArray());
         }
     }
 
