@@ -38,8 +38,6 @@ namespace IntelliSoftAPIV2.Services
                 Nombre = dto.Nombre,
                 Apellidos = dto.Apellidos,
                 Email = dto.Email,
-                PhoneNumber = dto.PhoneNumber,
-                Direccion = dto.Direccion,
                 UserName = dto.Email
             };
 
