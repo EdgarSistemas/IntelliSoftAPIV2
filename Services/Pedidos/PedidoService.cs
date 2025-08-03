@@ -151,12 +151,12 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                 {
                     InsumoId = detalle.InsumoId,
                     Fecha = DateTime.Now,
-                    Entrada = 0,
                     Salida = (int?)salida,
                     Existencias = (int?)nuevasExistencias,
                     Costo = costo,
                     Haber = haber,
-                    Saldo = nuevoSaldo
+                    Saldo = nuevoSaldo,
+                    PedidoId = id
                 };
 
                 _context.TbInventarioInsumos.Add(nuevoMovimiento);

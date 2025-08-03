@@ -40,11 +40,13 @@ namespace IntelliSoftAPIV2.Services.Insumo
                         .Select(inv => inv.Existencias)
                         .FirstOrDefault(),
                     PrecioPromedio = _context.TbInventarioInsumos
-                        .Where(inv => inv.InsumoId == i.IdInsumo)
+                        .Where(inv => inv.InsumoId == i.IdInsumo && inv.Promedio != null)
                         .OrderByDescending(inv => inv.Fecha)
                         .Select(inv => (decimal?)inv.Promedio)
                         .FirstOrDefault()
-                }).ToListAsync();
+                })
+                .Where(i => i.Estatus == 1)
+                .ToListAsync();
         }
 
         public async Task<InsumoDto?> GetById(int id)
@@ -55,7 +57,12 @@ namespace IntelliSoftAPIV2.Services.Insumo
 
             if (i == null) return null;
 
-            var inventario = await _context.TbInventarioInsumos
+            var inventarioConPromedio = await _context.TbInventarioInsumos
+                .Where(inv => inv.InsumoId == i.IdInsumo && inv.Promedio != null)
+                .OrderByDescending(inv => inv.Fecha)
+                .FirstOrDefaultAsync();
+
+            var inventarioExistencias = await _context.TbInventarioInsumos
                 .Where(inv => inv.InsumoId == i.IdInsumo)
                 .OrderByDescending(inv => inv.Fecha)
                 .FirstOrDefaultAsync();
@@ -75,8 +82,8 @@ namespace IntelliSoftAPIV2.Services.Insumo
                     Descripcion = i.Unidad.Descripcion,
                     Estatus = i.Unidad.Estatus
                 },
-                Existencias = inventario?.Existencias,
-                PrecioPromedio = inventario?.Promedio
+                Existencias = inventarioExistencias?.Existencias,
+                PrecioPromedio = inventarioConPromedio?.Promedio
             };
         }
 
