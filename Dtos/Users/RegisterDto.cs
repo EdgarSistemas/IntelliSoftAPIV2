@@ -11,8 +11,6 @@ namespace IntelliSoftAPIV2.Dtos.Users
         [Required]
         [EmailAddress]
         public string Email { get; set; }
-        [Required]
-        [MinLength(6)]
         public string Password { get; set; }
         public string Rol { get; set; }
     }
