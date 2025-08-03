@@ -47,7 +47,8 @@ namespace IntelliSoftAPIV2.Services
             var createResult = await _userManager.CreateAsync(user, dto.Password);
             if (!createResult.Succeeded)
                 return ServiceResult<string>.Failure(createResult.Errors.FirstOrDefault()?.Description);
-
+            var userId = user.Id;
+            
             // Verificar y crear rol si no existe
             if (!await _roleManager.RoleExistsAsync(dto.Rol))
             {
@@ -63,22 +64,32 @@ namespace IntelliSoftAPIV2.Services
                 return ServiceResult<string>.Failure("No se pudo asignar el rol al usuario");
             }
 
-            return ServiceResult<string>.CreateSuccess(user.Id, "Usuario registrado correctamente");
+            return ServiceResult<string>.SuccessResult(userId);
+
         }
 
         // LOGIN 
-        public async Task<object> Login(string email, string password)
+        public async Task<ServiceResult<object>> Login(string email, string password)
         {
-            // Login
             var usuario = await _userManager.FindByEmailAsync(email);
             if (usuario == null || !await _userManager.CheckPasswordAsync(usuario, password))
-                return ServiceResult<string>.Failure("Credenciales Inválidas");
+                return ServiceResult<object>.Failure("Credenciales inválidas");
 
             var roles = await _userManager.GetRolesAsync(usuario);
             var token = _tokenService.CreateToken(usuario, roles);
 
-            return new { token };
+            return ServiceResult<object>.SuccessResult(new { token });
         }
+        public class ServiceResult<T>
+        {
+            public bool Success { get; set; }
+            public T? Data { get; set; }
+            public string? Message { get; set; }
+
+            public static ServiceResult<T> SuccessResult(T data) => new() { Success = true, Data = data };
+            public static ServiceResult<T> Failure(string message) => new() { Success = false, Message = message };
+        }
+
 
         // Detalles del usuario 
         public async Task<object> GetUserDetail(ClaimsPrincipal userClaims)
@@ -111,7 +122,7 @@ namespace IntelliSoftAPIV2.Services
                     Id = user.Id,
                     Email = user.Email,
                     Nombre = user.Nombre,
-                    Appellidos = user.Apellidos,
+                    Apellidos = user.Apellidos,
                     Rol = roles.FirstOrDefault()
                 });
             }
@@ -149,7 +160,7 @@ namespace IntelliSoftAPIV2.Services
                 var rol = roles.FirstOrDefault();
 
                 if (rol != "anonimo")
-                    return ServiceResult<RegisterDto?>.CreateSuccess(null, "El usuario ya existe pero no es anónimo");
+                    return ServiceResult<RegisterDto?>.Failure( "El usuario ya existe pero no es anónimo");
 
                 var dtoExistente = new RegisterDto
                 {
@@ -160,7 +171,7 @@ namespace IntelliSoftAPIV2.Services
                     Rol = "anonimo"
                 };
 
-                return ServiceResult<RegisterDto?>.CreateSuccess(dtoExistente, "Usuario anónimo existente");
+                return ServiceResult<RegisterDto?>.SuccessResult(dtoExistente);
             }
 
             // crear nuevo usuario anónimo
@@ -194,7 +205,7 @@ namespace IntelliSoftAPIV2.Services
                 Rol = "anonimo"
             };
 
-            return ServiceResult<RegisterDto?>.CreateSuccess(dtoNuevo, "Usuario anónimo creado correctamente");
+            return ServiceResult<RegisterDto?>.SuccessResult(dtoNuevo);
         }
     }
 
