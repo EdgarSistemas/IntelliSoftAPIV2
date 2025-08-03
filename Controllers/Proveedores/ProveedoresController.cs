@@ -42,7 +42,6 @@ namespace IntelliSoftAPIV2.Controllers.Proveedores
         {
             if (!ModelState.IsValid)
             {
-                // Opcional: puedes devolver todos los errores de validación
                 return BadRequest(ModelState);
             }
 

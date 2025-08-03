@@ -174,5 +174,57 @@ namespace IntelliSoftAPIV2.Services.Producto
                 message: "Producto eliminado correctamente"
             );
         }
+
+        public async Task<ProductoDocumentosDto?> ObtenerProductoDocumentosAsync(int idProducto)
+        {
+            var producto = await _context.TbProductos
+                .FirstOrDefaultAsync(p => p.IdProductos == idProducto && p.Estatus == 1);
+
+            if (producto == null)
+                return null;
+
+            var documentos = await _context.TbDocumentos
+                .Where(d => d.IdProductos == idProducto)
+                .Select(d => new DocumentoDto
+                {
+                    IdDocumento = d.IdDocumento,
+                    NombreDocumento = d.NombreDocumento,
+                    Url = d.Url
+                })
+                .ToListAsync();
+
+            return new ProductoDocumentosDto
+            {
+                IdProducto = producto.IdProductos,
+                Nombre = producto.Nombre,
+                Descripcion = producto.Descripcion,
+                Documentos = documentos
+            };
+        }
+
+
+        public async Task<List<ProductoDocumentosDto>> ObtenerProductosDocumentosAsync()
+        {
+            var productosConDocumentos = await _context.TbProductos
+                .Where(p => p.Estatus == 1)
+                .Select(p => new ProductoDocumentosDto
+                {
+                    IdProducto = p.IdProductos,
+                    Nombre = p.Nombre,
+                    Descripcion = p.Descripcion,
+                    Documentos = _context.TbDocumentos
+                        .Where(d => d.IdProductos == p.IdProductos)
+                        .Select(d => new DocumentoDto
+                        {
+                            IdDocumento = d.IdDocumento,
+                            NombreDocumento = d.NombreDocumento,
+                            Url = d.Url
+                        }).ToList()
+                })
+                .ToListAsync();
+
+            return productosConDocumentos;
+        }
+
     }
 }

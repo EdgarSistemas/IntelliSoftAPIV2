@@ -184,7 +184,9 @@ namespace IntelliSoftAPIV2.Services
                 EmailConfirmed = true
             };
 
-            string contrasenaGenerada = Guid.NewGuid().ToString("N").Substring(0, 8) + "!";
+            string baseContrasena = Guid.NewGuid().ToString("N").Substring(0, 8);
+            string contrasenaConMayuscula = char.ToUpper(baseContrasena[0]) + baseContrasena.Substring(1);
+            string contrasenaGenerada = contrasenaConMayuscula + "!";
 
             var result = await _userManager.CreateAsync(nuevoUsuario, contrasenaGenerada);
             if (!result.Succeeded)

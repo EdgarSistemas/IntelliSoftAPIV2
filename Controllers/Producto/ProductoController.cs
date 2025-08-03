@@ -62,5 +62,26 @@ namespace IntelliSoftAPIV2.Controllers.Producto
                 ? Ok(new { success = true, message = result.Message })
                 : NotFound(new { success = false, message = result.Message });
         }
+
+        [Authorize(Roles = "admin")]
+        [HttpGet("documentos/{idProducto}")]
+        public async Task<IActionResult> ObtenerProductoDocumentosAsync(int idProducto)
+        {
+            var resultado = await _productoService.ObtenerProductoDocumentosAsync(idProducto);
+            if (resultado == null)
+                return NotFound("Producto no encontrado");
+
+            return Ok(resultado);
+        }
+
+        [Authorize(Roles = "admin")]
+        [HttpGet("documentos")]
+        public async Task<IActionResult> ObtenerProductosDocumentosAsync()
+        {
+            var productos = await _productoService.ObtenerProductosDocumentosAsync();
+            return Ok(productos);
+        }
+
+
     }
 }

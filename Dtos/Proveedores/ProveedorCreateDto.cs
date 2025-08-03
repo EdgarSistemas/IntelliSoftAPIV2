@@ -11,9 +11,8 @@ namespace IntelliSoftAPIV2.Dtos.Proveedores
         [RegularExpression(@"^\d{10}$", ErrorMessage = "El teléfono debe contener solo números.")]
         public string Telefono { get; set; }
         public string? Contacto { get; set; }
-        [Required(ErrorMessage = "El correo es obligatorio.")]
         [EmailAddress(ErrorMessage = "El correo electrónico no es válido.")]
-        public string CorreoElectronico { get; set; }
+        public string? CorreoElectronico { get; set; }
         public string? DescripcionServicio { get; set; }
         [Required]
         public int Estatus { get; set; }

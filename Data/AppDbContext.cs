@@ -43,6 +43,8 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public virtual DbSet<ApplicationUser> ApplicationUser { get; set; }
 
+    public virtual DbSet<TbDocumento> TbDocumentos { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -437,6 +439,23 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
                 .HasConstraintName("FK_CotizacionDetalle_Insumo");
         });
 
+
+        modelBuilder.Entity<TbDocumento>(entity => 
+        {
+            entity.HasKey(e => e.IdDocumento).HasName("PK_TB_Documento_IdDocumento");
+
+            entity.ToTable("TB_Documento", "catalogos");
+
+            entity.Property(e => e.IdProductos).HasColumnName("id_producto");
+            entity.Property(e => e.NombreDocumento)
+            .HasMaxLength(500)
+            .IsUnicode(false)
+            .HasColumnName("nombre_columna");
+            entity.Property(e => e.Url)
+            .HasColumnType("nvarchar(max)")
+            .HasColumnName("url");
+        });
+       
 
 
         OnModelCreatingPartial(modelBuilder);
