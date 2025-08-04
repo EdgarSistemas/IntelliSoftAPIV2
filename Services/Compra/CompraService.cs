@@ -134,7 +134,9 @@ namespace IntelliSoftAPIV2.Services.Compra
                         Estatus = c.Proveedor.Estatus
                     },
                     Total = c.TbCompraDetalles.Sum(cd => cd.Cantidad * cd.PrecioUnitario)
-                }).ToListAsync();
+                })
+                .OrderByDescending(c => c.FechaCompra)
+                .ToListAsync();
         }
 
         public async Task<CompraDetalleDto?> ObtenerCompraPorId(int id)

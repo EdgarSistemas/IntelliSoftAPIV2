@@ -4,6 +4,7 @@ namespace IntelliSoftAPIV2.Dtos.Users
 {
     public class RegisterDto
     {
+        public string? Id { get; set; }
         [Required]
         [MaxLength(100)]
         public string Nombre { get; set; }
@@ -11,8 +12,6 @@ namespace IntelliSoftAPIV2.Dtos.Users
         [Required]
         [EmailAddress]
         public string Email { get; set; }
-        [Required]
-        [MinLength(6)]
         public string Password { get; set; }
         public string Rol { get; set; }
     }

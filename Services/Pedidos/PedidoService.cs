@@ -160,6 +160,8 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                     Debe = null,
                     Haber = haber,
                     Saldo = nuevoSaldo,
+                    PedidoId = id
+                    Saldo = nuevoSaldo,
                     CompraId = null,
                     PedidoId = id
                 };

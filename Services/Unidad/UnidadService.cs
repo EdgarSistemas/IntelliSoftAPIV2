@@ -23,7 +23,9 @@ namespace IntelliSoftAPIV2.Services.Unidad
                     Simbolo = u.Simbolo,
                     Descripcion = u.Descripcion,
                     Estatus = u.Estatus
-                }).ToListAsync();
+                })
+                .Where(p => p.Estatus == 1)
+                .ToListAsync();
         }
 
         public async Task<UnidadDto?> GetById(int id)
