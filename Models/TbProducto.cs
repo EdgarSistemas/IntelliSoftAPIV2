@@ -26,11 +26,11 @@ public partial class TbProducto
     [Column("hectarea_base", TypeName = "decimal(10,2)")]
     public decimal? HectareaBase { get; set; }
 
-    [Column("porcentaje_ganancia", TypeName = "decimal(5,2)")]
-    public decimal PorcentajeGanancia { get; set; }
+   // [Column("porcentaje_ganancia", TypeName = "decimal(5,2)")]
+   // public decimal PorcentajeGanancia { get; set; }
 
-    [Column("porcentaje_riesgo", TypeName = "decimal(5,2)")]
-    public decimal PorcentajeRiesgo { get; set; }
+   // [Column("porcentaje_riesgo", TypeName = "decimal(5,2)")]
+    //public decimal PorcentajeRiesgo { get; set; }
 
     [Column("estatus")]
     public int Estatus { get; set; } = 1;

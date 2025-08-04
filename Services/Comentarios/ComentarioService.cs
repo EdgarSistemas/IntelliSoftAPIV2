@@ -36,7 +36,7 @@ namespace IntelliSoftAPIV2.Services.Comentarios
                     Mensaje = c.Mensaje,
                     Fecha = c.Fecha,
                     UsuarioId = c.UsuarioId,
-                    NombreUsuario = c.Usuario != null ? c.Usuario.Nombre : "Anónimo"
+                    NombreUsuario = c.Usuario != null ? c.Usuario.Nombre : "Anónimo",
                 })
                 .ToListAsync();
         }

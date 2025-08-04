@@ -43,6 +43,23 @@ namespace IntelliSoftAPIV2.Controllers.Auth
             return Ok(result);
         }
 
+        [Authorize(Roles = "admin")]
+        [HttpPut("editar")]
+        public async Task<IActionResult> EditUser([FromBody] EditDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errores = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(new { errores });
+            }
+            var result = await _authService.EditUser(dto);
+            if (result == null) return NotFound("Usuario no encontrado");
+            return Ok(new { message = "Usuario editado correctamente", user = result });
+        }
+
         [Authorize]
         [HttpGet("detail")]
         public async Task<IActionResult> GetUserDetail()

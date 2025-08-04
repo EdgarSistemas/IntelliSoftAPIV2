@@ -95,6 +95,27 @@ namespace IntelliSoftAPIV2.Services
             };
         }
 
+        // Editar usuario
+        public async Task<RegisterDto?> EditUser(EditDto dto)
+        {
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null) return null;
+            // Actualizar propiedades del usuario
+            user.Email = dto.Email;
+            user.UserName = dto.Email;
+            // Actualizar contraseña si se proporciona
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetResult = await _userManager.ResetPasswordAsync(user, token, dto.Password);
+                if (!resetResult.Succeeded) return null;
+            }
+            // Guardar cambios
+            var updateResult = await _userManager.UpdateAsync(user);
+            
+            return new RegisterDto { Id = user.Id, Nombre = user.Nombre, Apellidos = user.Apellidos, Email = user.Email };
+        }
+
         // Listar todos los usuarios 
         public async Task<List<object>> GetAllUsers()
         {
@@ -151,6 +172,7 @@ namespace IntelliSoftAPIV2.Services
 
                 var dtoExistente = new RegisterDto
                 {
+                    Id = user.Id,
                     Nombre = user.Nombre,
                     Apellidos = user.Apellidos,
                     Email = user.Email,
