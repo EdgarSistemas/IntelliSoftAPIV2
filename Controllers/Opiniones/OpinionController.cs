@@ -28,7 +28,7 @@ namespace IntelliSoftAPIV2.Controllers.Opiniones
             return Ok(new { message = "Opinión registrada correctamente" });
         }
 
-        [Authorize(Roles = "cliente,admin")]
+        
         [HttpGet("getAll")]
         public async Task<IActionResult> ObtenerTodos()
         {
