@@ -1,4 +1,5 @@
 ﻿using IntelliSoftAPI.Models;
+using IntelliSoftAPIV2.Configuration;
 using IntelliSoftAPIV2.Dtos.Cotizacion;
 using IntelliSoftAPIV2.Models;
 using Microsoft.AspNetCore.Identity;
@@ -10,28 +11,58 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
     {
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly EmailService _emailService;
 
-        public CotizacionService(AppDbContext context, UserManager<ApplicationUser> userManager)
+        public CotizacionService(AppDbContext context, UserManager<ApplicationUser> userManager, EmailService emailService)
         {
             _context = context;
             _userManager = userManager;
+            _emailService = emailService;
         }
 
         public async Task<List<CotizacionResumenDto>> GetCotizacionesResumen()
         {
-            return await _context.TbCotizaciones
+            var cotizaciones = await _context.TbCotizaciones
                 .Include(c => c.Usuario)
                 .Include(c => c.Detalles)
-                .Select(c => new CotizacionResumenDto
+                .Select(c => new
+                {
+                    c.IdCotizaciones,
+                    c.ClaveCotizacion,
+                    c.FechaSolicitud,
+                    c.Estatus,
+                    c.Hectareas,
+                    ClienteNombre = c.Usuario.Nombre + " " + c.Usuario.Apellidos,
+                    PorcentajeGanancia = c.PorcentajeGanancia,
+                    PorcentajeRiesgo = c.PorcentajeRiesgo,
+                    AplicaRiesgo = c.AplicaRiesgo,
+                    Subtotal = c.Detalles.Sum(d => d.Cantidad * d.PrecioPromedio)
+                })
+                .OrderByDescending(c => c.FechaSolicitud)
+                .ToListAsync();
+
+            return cotizaciones.Select(c =>
+            {
+                var basePrice = Math.Round(c.Subtotal, 2);
+                var conGanancia = Math.Round(basePrice * (1 + c.PorcentajeGanancia / 100), 2);
+                var conRiesgo = c.AplicaRiesgo == 1
+                    ? Math.Round(conGanancia * (1 + c.PorcentajeRiesgo / 100), 2)
+                    : conGanancia;
+
+                return new CotizacionResumenDto
                 {
                     IdCotizacion = c.IdCotizaciones,
                     ClaveCotizacion = c.ClaveCotizacion,
                     FechaSolicitud = c.FechaSolicitud ?? DateTime.MinValue,
                     EstadoSolicitud = c.Estatus,
-                    NombreCliente = c.Usuario.Nombre + " " + c.Usuario.Apellidos,
-                    Total = c.Detalles.Sum(d => d.Cantidad * d.PrecioPromedio)
-                })
-                .ToListAsync();
+                    Hectareas = c.Hectareas,
+                    NombreCliente = c.ClienteNombre,
+                    PrecioBase = basePrice,
+                    PrecioConGanancia = conGanancia,
+                    PrecioConRiesgo = conRiesgo,
+                    Total = conRiesgo
+                };
+            }).ToList();
         }
 
         public async Task<CotizacionDto?> GetCotizacionById(int id)
@@ -44,21 +75,38 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
 
             if (cotizacion == null) return null;
 
+            var detallesDto = cotizacion.Detalles.Select(d => new CotizacionDetalleDto
+            {
+                InsumoId = d.InsumoId,
+                NombreInsumo = d.Insumo.Nombre,
+                Cantidad = d.Cantidad,
+                PrecioPromedio = d.PrecioPromedio
+            }).ToList();
+
+            var precioBase = detallesDto.Sum(d => d.Subtotal);
+
+            var porcentajeGanancia = cotizacion.PorcentajeGanancia;
+            var porcentajeRiesgo = cotizacion.PorcentajeRiesgo;
+            var aplicaRiesgo = cotizacion.AplicaRiesgo == 1;
+
+            var precioConGanancia = Math.Round(precioBase * (1 + porcentajeGanancia / 100), 2);
+            var precioConRiesgo = aplicaRiesgo
+                ? Math.Round(precioConGanancia * (1 + porcentajeRiesgo / 100), 2)
+                : precioConGanancia;
+
             return new CotizacionDto
             {
                 IdCotizacion = cotizacion.IdCotizaciones,
                 ClaveCotizacion = cotizacion.ClaveCotizacion,
+                ProductoId = cotizacion.ProductoId ?? 0,
+                UsuarioId = cotizacion.UsuarioId,
                 Hectareas = cotizacion.Hectareas,
                 EstadoSolicitud = cotizacion.Estatus,
                 FechaSolicitud = cotizacion.FechaSolicitud ?? DateTime.MinValue,
-                UsuarioId = cotizacion.UsuarioId,
-                Detalles = cotizacion.Detalles.Select(d => new CotizacionDetalleDto
-                {
-                    InsumoId = d.InsumoId,
-                    NombreInsumo = d.Insumo.Nombre,
-                    Cantidad = d.Cantidad,
-                    PrecioPromedio = d.PrecioPromedio
-                }).ToList()
+                Detalles = detallesDto,
+                PrecioBase = Math.Round(precioBase, 2),
+                PrecioConGanancia = precioConGanancia,
+                PrecioConRiesgo = precioConRiesgo
             };
         }
 
@@ -68,7 +116,6 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             if (usuario == null)
                 return ServiceResult<string>.Failure("Usuario no encontrado");
 
-            // Obtener producto y su receta
             var producto = await _context.TbProductos
                 .Include(p => p.TbProductoInsumos)
                 .FirstOrDefaultAsync(p => p.IdProductos == dto.ProductoId);
@@ -76,10 +123,11 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             if (producto == null || producto.HectareaBase <= 0 || producto.TbProductoInsumos.Count == 0)
                 return ServiceResult<string>.Failure("Producto inválido o sin receta");
 
-            // Generar clave
+            var porcentajeGanancia = producto.PorcentajeGanancia;
+            var porcentajeRiesgo = producto.PorcentajeRiesgo;
+
             var clave = GenerarClaveCotizacion();
 
-            // Crear cotización
             var cotizacion = new TbCotizacion
             {
                 ClaveCotizacion = clave,
@@ -88,7 +136,10 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
                 Hectareas = dto.Hectareas,
                 DetalleCotizacion = dto.DetalleCotizacion,
                 FechaSolicitud = DateTime.UtcNow,
-                Estatus = 1
+                Estatus = 1,
+                PorcentajeGanancia = porcentajeGanancia,
+                PorcentajeRiesgo = porcentajeRiesgo,
+                AplicaRiesgo = 1
             };
 
             _context.TbCotizaciones.Add(cotizacion);
@@ -102,7 +153,7 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
                 var cantidadEscalada = receta.Cantidad * factorEscala;
 
                 var inventario = await _context.TbInventarioInsumos
-                    .Where(i => i.InsumoId == insumoId)
+                    .Where(i => i.InsumoId == insumoId && i.Promedio != null)
                     .OrderByDescending(i => i.Fecha)
                     .FirstOrDefaultAsync();
 
@@ -161,11 +212,37 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
 
             var usuario = cotizacion.Usuario;
             var roles = await _userManager.GetRolesAsync(usuario);
+
+            // Si el usuario era anónimo, lo promovemos y enviamos las credenciales
             if (roles.Contains("anonimo"))
             {
                 await _userManager.RemoveFromRoleAsync(usuario, "anonimo");
+
                 if (!roles.Contains("cliente"))
                     await _userManager.AddToRoleAsync(usuario, "cliente");
+
+                if (!string.IsNullOrEmpty(usuario.ContrasenaGenerada))
+                {
+                    string cuerpoHtml = $@"
+                <h3>¡Tu cotización ha sido aceptada!</h3>
+                <p>Tu acceso al sistema está listo:</p>
+                <ul>
+                    <li><b>Email:</b> {usuario.Email}</li>
+                    <li><b>Contraseña:</b> {usuario.ContrasenaGenerada}</li>
+                </ul>
+                <p>Por seguridad, te recomendamos cambiar la contraseña después de iniciar sesión.</p>";
+
+                    try
+                    {
+                        await _emailService.EnviarCorreoAsync(usuario.Email, "Acceso a AquaGrow", cuerpoHtml);
+                    }
+                    catch (Exception ex)
+                    {
+                        return ServiceResult<string>.Failure($"Error al enviar correo: {ex.Message}");
+                    }
+
+                    usuario.ContrasenaGenerada = null;
+                }
             }
 
             await _context.SaveChangesAsync();

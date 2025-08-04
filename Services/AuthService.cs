@@ -140,7 +140,7 @@ namespace IntelliSoftAPIV2.Services
         {
             var user = await _userManager.FindByEmailAsync(email);
 
-            // si ya existe
+            // Si ya existe
             if (user != null)
             {
                 var roles = await _userManager.GetRolesAsync(user);
@@ -151,27 +151,29 @@ namespace IntelliSoftAPIV2.Services
 
                 var dtoExistente = new RegisterDto
                 {
+                    Id = user.Id,
                     Nombre = user.Nombre,
                     Apellidos = user.Apellidos,
                     Email = user.Email,
-                    Password = "",
+                    Password = "", // No se recupera la contraseña aquí
                     Rol = "anonimo"
                 };
 
                 return ServiceResult<RegisterDto?>.CreateSuccess(dtoExistente, "Usuario anónimo existente");
             }
 
-            // crear nuevo usuario anónimo
+            // Crear nuevo usuario anónimo
+            string contrasenaGenerada = GenerarContrasenaSegura(8);
+
             var nuevoUsuario = new ApplicationUser
             {
                 Nombre = nombre,
                 Apellidos = apellidos,
                 Email = email,
                 UserName = email,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                ContrasenaGenerada = contrasenaGenerada // Campo personalizado que debes haber agregado
             };
-
-            string contrasenaGenerada = GenerarContrasenaSegura(8);
 
             var result = await _userManager.CreateAsync(nuevoUsuario, contrasenaGenerada);
             if (!result.Succeeded)
@@ -183,13 +185,16 @@ namespace IntelliSoftAPIV2.Services
 
             await _userManager.AddToRoleAsync(nuevoUsuario, "anonimo");
 
+            // Guardar campo personalizado en la base (si no se guardó con CreateAsync)
+            await _userManager.UpdateAsync(nuevoUsuario);
+
             var dtoNuevo = new RegisterDto
             {
                 Id = nuevoUsuario.Id,
                 Nombre = nuevoUsuario.Nombre,
                 Apellidos = nuevoUsuario.Apellidos,
                 Email = nuevoUsuario.Email,
-                Password = "",
+                Password = "", // Se enviará más adelante
                 Rol = "anonimo"
             };
 
