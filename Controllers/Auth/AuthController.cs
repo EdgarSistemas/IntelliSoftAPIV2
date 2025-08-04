@@ -30,22 +30,18 @@ namespace IntelliSoftAPIV2.Controllers.Auth
             return Ok(new
             {
                 message = result.Message,
-                id = result.Data
+                userId = result.Data
             });
-            
+
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
             var result = await _authService.Login(dto.Email, dto.Password);
-
-            if (!result.Success)
-                return Unauthorized(new { message = result.Message });
-
-            return Ok(result.Data);
+            if (result == null) return Unauthorized("Credenciales inválidas");
+            return Ok(result);
         }
-
 
         [Authorize]
         [HttpGet("detail")]
