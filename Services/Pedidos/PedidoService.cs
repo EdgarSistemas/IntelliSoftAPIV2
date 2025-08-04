@@ -52,6 +52,7 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                     Estatus = p.Estatus,
                     Detalles = p.Cotizacion.Detalles.Select(d => new CotizacionDetalleDto
                     {
+                        NombreInsumo = d.Insumo.Nombre,
                         Cantidad = d.Cantidad,
                         PrecioPromedio = d.PrecioPromedio
                     }).ToList()
@@ -151,12 +152,16 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                 {
                     InsumoId = detalle.InsumoId,
                     Fecha = DateTime.Now,
+                    Entrada = null,
                     Salida = (int?)salida,
                     Existencias = (int?)nuevasExistencias,
                     Costo = costo,
+                    Promedio = null,
+                    Debe = null,
                     Haber = haber,
                     Saldo = nuevoSaldo,
-                    PedidoId = id
+                    PedidoId = id,
+                    CompraId = null,
                 };
 
                 _context.TbInventarioInsumos.Add(nuevoMovimiento);
@@ -167,6 +172,40 @@ namespace IntelliSoftAPIV2.Services.Pedidos
             await _context.SaveChangesAsync();
 
             return ServiceResult<string>.CreateSuccess("Pedido completado y salidas registradas.");
+        }
+
+        public async Task<List<PedidoResponseDto>> ObtenerPorUsuarioAsync(string usuarioId)
+        {
+            return await _context.TbPedidos
+                .Include(p => p.Cotizacion)
+                    .ThenInclude(c => c.Detalles)
+                        .ThenInclude(d => d.Insumo)
+                .Include(p => p.Cotizacion)
+                    .ThenInclude(c => c.Usuario)
+                .Include(p => p.Cotizacion)
+                    .ThenInclude(c => c.Producto) // 👈 asegúrate de incluir esto
+                .Where(p => p.Cotizacion.UsuarioId == usuarioId && p.Estatus != 0)
+                .Select(p => new PedidoResponseDto
+                {
+                    IdPedido = p.IdPedido,
+                    CotizacionId = p.CotizacionId,
+                    FechaPedido = p.FechaPedido,
+                    ClienteId = p.Cotizacion.UsuarioId,
+                    NombreCliente = p.Cotizacion.Usuario.Nombre + " " + p.Cotizacion.Usuario.Apellidos,
+                    Comentario = p.Cotizacion.DetalleCotizacion,
+
+                    ProductoId = p.Cotizacion.ProductoId,
+                    NombreProducto = p.Cotizacion.Producto.Nombre,
+
+                    Estatus = p.Estatus,
+                    Detalles = p.Cotizacion.Detalles.Select(d => new CotizacionDetalleDto
+                    {
+                        NombreInsumo = d.Insumo.Nombre,
+                        Cantidad = d.Cantidad,
+                        PrecioPromedio = d.PrecioPromedio
+                    }).ToList()
+                })
+                .ToListAsync();
         }
 
 

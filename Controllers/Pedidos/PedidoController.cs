@@ -1,4 +1,5 @@
-﻿using IntelliSoftAPIV2.Dtos.Pedidos;
+﻿using System.Security.Claims;
+using IntelliSoftAPIV2.Dtos.Pedidos;
 using IntelliSoftAPIV2.Services;
 using IntelliSoftAPIV2.Services.Pedidos;
 using Microsoft.AspNetCore.Authorization;
@@ -73,7 +74,7 @@ namespace IntelliSoftAPIV2.Controllers.Pedidos
             if (!resultado.Success)
                 return NotFound(new { mensaje = resultado.Message });
 
-            return Ok(new { message = "Opinión registrada correctamente" });
+            return Ok(new { message = "Pedido eliminado correctamente" });
         }
 
 
@@ -103,6 +104,20 @@ namespace IntelliSoftAPIV2.Controllers.Pedidos
                 return NotFound(new { mensaje = resultado.Message });
 
             return Ok(new { mensaje = resultado.Data });
+        }
+
+        [Authorize(Roles = "admin,cliente")]
+        [HttpGet("cliente")]
+        public async Task<IActionResult> ObtenerPedidosPorCliente()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Console.WriteLine(userId);
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("No se pudo obtener el ID del usuario autenticado");
+
+            var pedidos = await _service.ObtenerPorUsuarioAsync(userId);
+
+            return Ok(pedidos);
         }
 
 

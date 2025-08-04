@@ -9,5 +9,7 @@ namespace IntelliSoftAPIV2.Services.Pedidos
         Task<ServiceResult<string>> EliminarAsync(int id);
         Task<ServiceResult<string>> EstatusProcesoAsync(int id, int nuevoEstatus);
         Task<ServiceResult<string>> CompletarPedidoAsync(int id);
+
+        Task<List<PedidoResponseDto>> ObtenerPorUsuarioAsync(string usuarioId);
     }
 }

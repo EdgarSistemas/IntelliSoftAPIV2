@@ -74,7 +74,7 @@ namespace IntelliSoftAPIV2.Controllers.Producto
             return Ok(resultado);
         }
 
-        [Authorize(Roles = "admin")]
+        [Authorize(Roles = "admin, cliente")]
         [HttpGet("documentos")]
         public async Task<IActionResult> ObtenerProductosDocumentosAsync()
         {

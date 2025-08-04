@@ -1,4 +1,5 @@
-﻿using IntelliSoftAPIV2.Dtos.Opiniones;
+﻿using System.Security.Claims;
+using IntelliSoftAPIV2.Dtos.Opiniones;
 using IntelliSoftAPIV2.Services.Opiniones;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -19,16 +20,20 @@ namespace IntelliSoftAPIV2.Controllers.Opiniones
 
         [Authorize(Roles = "cliente")]
         [HttpPost("create")]
-        public async Task<IActionResult> Crear([FromBody] OpinionCreateDto dto)
+        public async Task<IActionResult> CrearOpinion([FromBody] OpinionCreateDto dto)
         {
-            if (!ModelState.IsValid)
-                return BadRequest(ModelState);
+            // Obtener userId del token
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
-            await _service.CrearAsync(dto);
-            return Ok(new { message = "Opinión registrada correctamente" });
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("Usuario no autenticado");
+
+            // Llamar al servicio con dto y userId
+            await _service.CrearAsync(dto, userId);
+
+            return Ok(new { message = "Opinión creada correctamente" });
         }
 
-        [Authorize(Roles = "cliente,admin")]
         [HttpGet("getAll")]
         public async Task<IActionResult> ObtenerTodos()
         {
