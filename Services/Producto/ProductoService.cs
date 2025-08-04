@@ -21,25 +21,40 @@ namespace IntelliSoftAPIV2.Services.Producto
                 .Include(p => p.TbProductoInsumos)
                     .ThenInclude(pi => pi.Insumo)
                     .ThenInclude(i => i.TbInventarioInsumos)
+                .Where(p => p.Estatus == 1)
                 .ToListAsync();
 
-            return productos.Select(p => new ProductoResumenDto
+            return productos.Select(p =>
             {
-                IdProductos = p.IdProductos,
-                Nombre = p.Nombre,
-                Descripcion = p.Descripcion,
-                HectareaBase = p.HectareaBase,
-                PrecioActual = p.TbProductoInsumos.Sum(pi =>
+                decimal precioBase = p.TbProductoInsumos.Sum(pi =>
                 {
-                    var insumo = pi.Insumo;
-                    var promedio = insumo?.TbInventarioInsumos
+                    var inventario = pi.Insumo?.TbInventarioInsumos
+                        .Where(ii => ii.Promedio != null)
                         .OrderByDescending(ii => ii.Fecha)
-                        .Select(ii => ii.Promedio)
-                        .FirstOrDefault() ?? 0;
+                        .FirstOrDefault();
 
-                    return (pi.Cantidad ?? 0) * promedio;
-                })
-            }).ToList();
+                    decimal precioPromedio = inventario?.Promedio ?? inventario?.Costo ?? 0;
+                    return (pi.Cantidad ?? 0) * precioPromedio;
+                });
+
+                var ganancia = (precioBase * (p.PorcentajeGanancia / 100));
+                var riesgo = (precioBase * (p.PorcentajeRiesgo / 100));
+
+                return new ProductoResumenDto
+                {
+                    IdProductos = p.IdProductos,
+                    Nombre = p.Nombre,
+                    Descripcion = p.Descripcion,
+                    HectareaBase = p.HectareaBase,
+                    PrecioActual = precioBase,
+                    PrecioCosto = precioBase,
+                    PorcentajeGanancia = p.PorcentajeGanancia,
+                    PorcentajeRiesgo = p.PorcentajeRiesgo,
+                    PrecioConGanancia = precioBase + ganancia,
+                    PrecioConRiesgo = precioBase + ganancia + riesgo
+                };
+            })
+            .ToList();
         }
 
         public async Task<ProductoDetalleDto?> GetById(int id)
@@ -54,16 +69,17 @@ namespace IntelliSoftAPIV2.Services.Producto
                 return null;
 
             var insumoDetalles = new List<ProductoInsumoDetalleDto>();
-            decimal precioTotal = 0;
+            decimal precioBase = 0;
 
             foreach (var pi in producto.TbProductoInsumos)
             {
                 var ultimoInventario = await _context.TbInventarioInsumos
-                    .Where(i => i.InsumoId == pi.InsumoId)
+                    .Where(i => i.InsumoId == pi.InsumoId && i.Promedio != null)
                     .OrderByDescending(i => i.Fecha)
                     .FirstOrDefaultAsync();
 
                 var precioPromedio = ultimoInventario?.Promedio ?? 0;
+
                 var cantidad = pi.Cantidad ?? 0;
 
                 insumoDetalles.Add(new ProductoInsumoDetalleDto
@@ -82,16 +98,24 @@ namespace IntelliSoftAPIV2.Services.Producto
                     }
                 });
 
-                precioTotal += cantidad * precioPromedio;
+                precioBase += cantidad * precioPromedio;
             }
+
+            var conGanancia = precioBase * (1 + (producto.PorcentajeGanancia / 100));
+            var conRiesgo = conGanancia * (1 + (producto.PorcentajeRiesgo / 100));
 
             return new ProductoDetalleDto
             {
                 IdProductos = producto.IdProductos,
                 Nombre = producto.Nombre,
                 Descripcion = producto.Descripcion,
-                PrecioActual = precioTotal,
                 HectareaBase = producto.HectareaBase,
+                PorcentajeGanancia = producto.PorcentajeGanancia,
+                PorcentajeRiesgo = producto.PorcentajeRiesgo,
+                PrecioActual = Math.Round(precioBase, 2),
+                PrecioCosto = Math.Round(precioBase, 2),
+                PrecioConGanancia = Math.Round(conGanancia, 2),
+                PrecioConRiesgo = Math.Round(conRiesgo, 2),
                 Insumos = insumoDetalles
             };
         }
@@ -102,7 +126,9 @@ namespace IntelliSoftAPIV2.Services.Producto
             {
                 Nombre = dto.Nombre,
                 Descripcion = dto.Descripcion,
-                HectareaBase = dto.HectareaBase
+                HectareaBase = dto.HectareaBase,
+                PorcentajeGanancia = dto.PorcentajeGanancia,
+                PorcentajeRiesgo = dto.PorcentajeRiesgo
             };
 
             foreach (var insumo in dto.Insumos)
@@ -135,6 +161,8 @@ namespace IntelliSoftAPIV2.Services.Producto
             producto.Nombre = dto.Nombre;
             producto.Descripcion = dto.Descripcion;
             producto.HectareaBase = dto.HectareaBase;
+            producto.PorcentajeGanancia = dto.PorcentajeGanancia;
+            producto.PorcentajeRiesgo = dto.PorcentajeRiesgo;
 
             // Validar que los insumos no han sido agregados ni eliminados
             var idsExistentes = producto.TbProductoInsumos.Select(x => x.InsumoId!.Value).OrderBy(x => x).ToList();

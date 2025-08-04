@@ -13,7 +13,10 @@ namespace IntelliSoftAPIV2.Dtos.Pedidos
         public string? ClienteId { get; set; }
         public string NombreCliente { get; set; }
 
-        public string? Comentario { get; set; } 
+        public string? Comentario { get; set; }
+
+        public int? ProductoId { get; set; }
+        public string? NombreProducto { get; set; }
         public List<CotizacionDetalleDto>? Detalles { get; set; }
     }
 }

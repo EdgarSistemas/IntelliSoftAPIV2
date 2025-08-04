@@ -35,6 +35,15 @@ public partial class TbCotizacion
     [Column("hectareas")]
     public decimal Hectareas { get; set; }
 
+    [Column("porcentaje_ganancia", TypeName = "decimal(5,2)")]
+    public decimal PorcentajeGanancia { get; set; }
+
+    [Column("porcentaje_riesgo", TypeName = "decimal(5,2)")]
+    public decimal PorcentajeRiesgo { get; set; }
+
+    [Column("aplica_riesgo")]
+    public int AplicaRiesgo { get; set; }
+
     public virtual ApplicationUser Usuario { get; set; } = null!;
     public virtual TbProducto? Producto { get; set; }
 

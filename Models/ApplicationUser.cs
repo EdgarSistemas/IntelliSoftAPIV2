@@ -18,6 +18,9 @@ namespace IntelliSoftAPIV2.Models
         public bool estatus { get; set; } = true;
        
 
+        [Column("contrasena_generada")]
+        [MaxLength(100)]
+        public string? ContrasenaGenerada { get; set; }
 
         //Relaciones con las tablas
         public virtual ICollection<TbComentario> TbComentarios { get; set; }

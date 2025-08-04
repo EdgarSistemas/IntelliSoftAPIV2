@@ -91,6 +91,7 @@ namespace IntelliSoftAPIV2.Services
                 Nombre = user.Nombre,
                 Apellidos = user.Apellidos,
                 PhoneNumber = user.PhoneNumber,
+                FechaRegistro = user.fecha_registro,
                 Rol = roles.FirstOrDefault()
             };
         }
@@ -161,7 +162,7 @@ namespace IntelliSoftAPIV2.Services
         {
             var user = await _userManager.FindByEmailAsync(email);
 
-            // si ya existe
+            // Si ya existe
             if (user != null)
             {
                 var roles = await _userManager.GetRolesAsync(user);
@@ -176,24 +177,25 @@ namespace IntelliSoftAPIV2.Services
                     Nombre = user.Nombre,
                     Apellidos = user.Apellidos,
                     Email = user.Email,
-                    Password = "",
+                    Password = "", // No se recupera la contraseña aquí
                     Rol = "anonimo"
                 };
 
                 return ServiceResult<RegisterDto?>.CreateSuccess(dtoExistente, "Usuario anónimo existente");
             }
 
-            // crear nuevo usuario anónimo
+            // Crear nuevo usuario anónimo
+            string contrasenaGenerada = GenerarContrasenaSegura(8);
+
             var nuevoUsuario = new ApplicationUser
             {
                 Nombre = nombre,
                 Apellidos = apellidos,
                 Email = email,
                 UserName = email,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                ContrasenaGenerada = contrasenaGenerada // Campo personalizado que debes haber agregado
             };
-
-            string contrasenaGenerada = GenerarContrasenaSegura(8);
 
             var result = await _userManager.CreateAsync(nuevoUsuario, contrasenaGenerada);
             if (!result.Succeeded)
@@ -205,13 +207,16 @@ namespace IntelliSoftAPIV2.Services
 
             await _userManager.AddToRoleAsync(nuevoUsuario, "anonimo");
 
+            // Guardar campo personalizado en la base (si no se guardó con CreateAsync)
+            await _userManager.UpdateAsync(nuevoUsuario);
+
             var dtoNuevo = new RegisterDto
             {
                 Id = nuevoUsuario.Id,
                 Nombre = nuevoUsuario.Nombre,
                 Apellidos = nuevoUsuario.Apellidos,
                 Email = nuevoUsuario.Email,
-                Password = "",
+                Password = "", // Se enviará más adelante
                 Rol = "anonimo"
             };
 
@@ -247,6 +252,55 @@ namespace IntelliSoftAPIV2.Services
 
             return new string(passwordChars.ToArray());
         }
+
+        // ACTUALIZAR USUARIO
+        public async Task<ServiceResult<string>> UpdateUserAsync(UpdateUserDto dto, ClaimsPrincipal userClaims)
+        {
+            // Buscar al usuario
+            var user = await _userManager.GetUserAsync(userClaims);
+            if (user == null)
+                return ServiceResult<string>.Failure("Usuario no encontrado");
+
+            // Validar que el nuevo email (si viene) no esté en uso
+            if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
+            {
+                var emailExists = await _userManager.FindByEmailAsync(dto.Email);
+                if (emailExists != null)
+                    return ServiceResult<string>.Failure("El email proporcionado ya está en uso");
+
+                user.Email = dto.Email;
+                user.UserName = dto.Email;               // Mantener email = username
+            }
+
+            // Actualizar campos simples
+            if (!string.IsNullOrWhiteSpace(dto.Nombre)) user.Nombre = dto.Nombre;
+            if (!string.IsNullOrWhiteSpace(dto.Apellidos)) user.Apellidos = dto.Apellidos;
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber)) user.PhoneNumber = dto.PhoneNumber;
+
+            // Gestionar cambio de contraseña (si se solicita)
+            if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+            {
+                if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
+                    return ServiceResult<string>.Failure("Debe proporcionar la contraseña actual para cambiarla");
+
+                var passwordCheck = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+                if (!passwordCheck)
+                    return ServiceResult<string>.Failure("La contraseña actual es incorrecta");
+
+                var resultCambioPass = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+                if (!resultCambioPass.Succeeded)
+                    return ServiceResult<string>.Failure(resultCambioPass.Errors.FirstOrDefault()?.Description);
+            }
+
+
+            // Persistir los cambios
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return ServiceResult<string>.Failure(updateResult.Errors.FirstOrDefault()?.Description);
+
+            return ServiceResult<string>.CreateSuccess(user.Id, "Usuario actualizado correctamente");
+        }
+
     }
 
 
