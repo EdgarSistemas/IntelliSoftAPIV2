@@ -185,6 +185,7 @@ namespace IntelliSoftAPIV2.Services
 
             var dtoNuevo = new RegisterDto
             {
+                Id = nuevoUsuario.Id,
                 Nombre = nuevoUsuario.Nombre,
                 Apellidos = nuevoUsuario.Apellidos,
                 Email = nuevoUsuario.Email,
