@@ -160,10 +160,8 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                     Debe = null,
                     Haber = haber,
                     Saldo = nuevoSaldo,
-                    PedidoId = id
-                    Saldo = nuevoSaldo,
+                    PedidoId = id,
                     CompraId = null,
-                    PedidoId = id
                 };
 
                 _context.TbInventarioInsumos.Add(nuevoMovimiento);
