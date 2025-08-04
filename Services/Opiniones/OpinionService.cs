@@ -13,11 +13,11 @@ namespace IntelliSoftAPIV2.Services.Opiniones
             _context = context;
         }
 
-        public async Task CrearAsync(OpinionCreateDto dto)
+        public async Task CrearAsync(OpinionCreateDto dto, string usuarioId)
         {
             var opinion = new TbOpinion
             {
-                UsuarioId = dto.UsuarioId,
+                UsuarioId = usuarioId,
                 ProductoId = dto.ProductoId,
                 Calificacion = dto.Calificacion,
                 Comentario = dto.Comentario,

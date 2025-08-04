@@ -83,5 +83,16 @@ namespace IntelliSoftAPIV2.Controllers.Auth
                 message = result.Message
             });
         }
+
+        [Authorize(Roles = "admin, cliente")]
+        [HttpPut("update")]
+        public async Task<IActionResult> UpdateUser([FromBody] UpdateUserDto dto)
+        {
+            var result = await _authService.UpdateUserAsync(dto, User);
+            if (!result.Success)
+                return BadRequest(result.Message);
+
+            return Ok(result.Message);
+        }
     }
 }

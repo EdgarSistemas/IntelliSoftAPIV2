@@ -91,6 +91,7 @@ namespace IntelliSoftAPIV2.Services
                 Nombre = user.Nombre,
                 Apellidos = user.Apellidos,
                 PhoneNumber = user.PhoneNumber,
+                FechaRegistro = user.fecha_registro,
                 Rol = roles.FirstOrDefault()
             };
         }
@@ -194,6 +195,55 @@ namespace IntelliSoftAPIV2.Services
 
             return ServiceResult<RegisterDto?>.CreateSuccess(dtoNuevo, "Usuario anónimo creado correctamente");
         }
+
+        // ACTUALIZAR USUARIO
+        public async Task<ServiceResult<string>> UpdateUserAsync(UpdateUserDto dto, ClaimsPrincipal userClaims)
+        {
+            // Buscar al usuario
+            var user = await _userManager.GetUserAsync(userClaims);
+            if (user == null)
+                return ServiceResult<string>.Failure("Usuario no encontrado");
+
+            // Validar que el nuevo email (si viene) no esté en uso
+            if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
+            {
+                var emailExists = await _userManager.FindByEmailAsync(dto.Email);
+                if (emailExists != null)
+                    return ServiceResult<string>.Failure("El email proporcionado ya está en uso");
+
+                user.Email = dto.Email;
+                user.UserName = dto.Email;               // Mantener email = username
+            }
+
+            // Actualizar campos simples
+            if (!string.IsNullOrWhiteSpace(dto.Nombre)) user.Nombre = dto.Nombre;
+            if (!string.IsNullOrWhiteSpace(dto.Apellidos)) user.Apellidos = dto.Apellidos;
+            if (!string.IsNullOrWhiteSpace(dto.PhoneNumber)) user.PhoneNumber = dto.PhoneNumber;
+
+            // Gestionar cambio de contraseña (si se solicita)
+            if (!string.IsNullOrWhiteSpace(dto.NewPassword))
+            {
+                if (string.IsNullOrWhiteSpace(dto.CurrentPassword))
+                    return ServiceResult<string>.Failure("Debe proporcionar la contraseña actual para cambiarla");
+
+                var passwordCheck = await _userManager.CheckPasswordAsync(user, dto.CurrentPassword);
+                if (!passwordCheck)
+                    return ServiceResult<string>.Failure("La contraseña actual es incorrecta");
+
+                var resultCambioPass = await _userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+                if (!resultCambioPass.Succeeded)
+                    return ServiceResult<string>.Failure(resultCambioPass.Errors.FirstOrDefault()?.Description);
+            }
+
+
+            // Persistir los cambios
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+                return ServiceResult<string>.Failure(updateResult.Errors.FirstOrDefault()?.Description);
+
+            return ServiceResult<string>.CreateSuccess(user.Id, "Usuario actualizado correctamente");
+        }
+
     }
 
 
