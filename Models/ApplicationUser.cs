@@ -21,7 +21,6 @@ namespace IntelliSoftAPIV2.Models
         public string? ContrasenaGenerada { get; set; }
 
         //Relaciones con las tablas
-        public virtual ICollection<TbComentario> TbComentarios { get; set; }
         public virtual ICollection<TbCotizacion> TbCotizaciones { get; set; }
         public virtual ICollection<TbOpinion> TbOpiniones { get; set; }
 

@@ -78,22 +78,28 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
             entity.ToTable("TB_Comentarios", "seguridad");
 
             entity.Property(e => e.IdComentario).HasColumnName("id_comentario");
-            entity.Property(e => e.Fecha)
-                .HasColumnType("datetime")
-                .HasColumnName("fecha");
+
             entity.Property(e => e.Mensaje)
                 .HasMaxLength(1000)
                 .IsUnicode(false)
                 .HasColumnName("mensaje");
+
+            entity.Property(e => e.Fecha)
+                .HasColumnType("datetime")
+                .HasColumnName("fecha");
+
+            entity.Property(e => e.OpinionId)
+                .HasColumnName("opinion_id");
+
             entity.Property(e => e.Estatus)
                 .HasDefaultValue(1)
                 .HasColumnName("estatus");
-            entity.Property(e => e.UsuarioId).HasColumnName("usuario_id");
 
-            entity.HasOne(d => d.Usuario).WithMany(p => p.TbComentarios)
-                .HasForeignKey(d => d.UsuarioId)
-                .IsRequired(false)
-                .HasConstraintName("FK__TB_Coment__usuar__0C85DE4D");
+            entity.HasOne(d => d.Opinion)
+                .WithMany()
+                .HasForeignKey(d => d.OpinionId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Comentario_Opinion");
         });
 
         modelBuilder.Entity<TbCompra>(entity =>
