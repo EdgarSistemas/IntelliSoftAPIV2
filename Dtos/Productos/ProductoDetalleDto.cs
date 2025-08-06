@@ -9,6 +9,11 @@ namespace IntelliSoftAPIV2.Dtos.Productos
         public string? Descripcion { get; set; }
         public decimal PrecioActual { get; set; }
         public decimal? HectareaBase { get; set; }
+        public decimal PorcentajeGanancia { get; set; }
+        public decimal PorcentajeRiesgo { get; set; }
+        public decimal PrecioCosto { get; set; }
+        public decimal PrecioConGanancia { get; set; }
+        public decimal PrecioConRiesgo { get; set; }
         public List<ProductoInsumoDetalleDto> Insumos { get; set; } = new();
     }
 }

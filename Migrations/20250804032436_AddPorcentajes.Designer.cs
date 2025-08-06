@@ -4,6 +4,7 @@ using IntelliSoftAPI.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace IntelliSoftAPIV2.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250804032436_AddPorcentajes")]
+    partial class AddPorcentajes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -85,14 +88,14 @@ namespace IntelliSoftAPIV2.Migrations
                         .HasColumnType("varchar(1000)")
                         .HasColumnName("mensaje");
 
-                    b.Property<int?>("OpinionId")
-                        .HasColumnType("int")
-                        .HasColumnName("opinion_id");
+                    b.Property<string>("UsuarioId")
+                        .HasColumnType("nvarchar(450)")
+                        .HasColumnName("usuario_id");
 
                     b.HasKey("IdComentario")
                         .HasName("PK__TB_Comen__1BA6C6F42BCD59A9");
 
-                    b.HasIndex("OpinionId");
+                    b.HasIndex("UsuarioId");
 
                     b.ToTable("TB_Comentarios", "seguridad");
                 });
@@ -578,11 +581,6 @@ namespace IntelliSoftAPIV2.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ContrasenaGenerada")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
-                        .HasColumnName("contrasena_generada");
-
                     b.Property<string>("Direccion")
                         .HasColumnType("nvarchar(max)");
 
@@ -859,12 +857,12 @@ namespace IntelliSoftAPIV2.Migrations
 
             modelBuilder.Entity("IntelliSoftAPI.Models.TbComentario", b =>
                 {
-                    b.HasOne("IntelliSoftAPI.Models.TbOpinion", "Opinion")
-                        .WithMany()
-                        .HasForeignKey("OpinionId")
-                        .HasConstraintName("FK_Comentario_Opinion");
+                    b.HasOne("IntelliSoftAPIV2.Models.ApplicationUser", "Usuario")
+                        .WithMany("TbComentarios")
+                        .HasForeignKey("UsuarioId")
+                        .HasConstraintName("FK__TB_Coment__usuar__0C85DE4D");
 
-                    b.Navigation("Opinion");
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("IntelliSoftAPI.Models.TbCompra", b =>
@@ -1126,6 +1124,8 @@ namespace IntelliSoftAPIV2.Migrations
 
             modelBuilder.Entity("IntelliSoftAPIV2.Models.ApplicationUser", b =>
                 {
+                    b.Navigation("TbComentarios");
+
                     b.Navigation("TbCotizaciones");
 
                     b.Navigation("TbOpiniones");

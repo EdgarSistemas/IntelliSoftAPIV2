@@ -18,6 +18,7 @@ using IntelliSoftAPIV2.Services.Producto;
 using IntelliSoftAPIV2.Services.Cotizacion;
 using IntelliSoftAPIV2.Services.Pedidos;
 using IntelliSoftAPIV2.Services.Dashboard;
+using IntelliSoftAPIV2.Configuration;
 
 
 
@@ -78,6 +79,9 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddAuthorization();
 
 //servicios 
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+builder.Services.AddScoped<EmailService>();
+
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<UnidadService>();
@@ -90,8 +94,6 @@ builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<CotizacionService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
-
-
 
 
 builder.Services.AddControllers();

@@ -18,7 +18,6 @@ namespace IntelliSoftAPIV2.Services.Comentarios
             var nuevoComentario = new TbComentario
             {
                 Mensaje = dto.Mensaje,
-                UsuarioId = dto.UsuarioId,
                 Fecha = DateTime.Now
             };
 
@@ -34,9 +33,7 @@ namespace IntelliSoftAPIV2.Services.Comentarios
                 {
                     IdComentario = c.IdComentario,
                     Mensaje = c.Mensaje,
-                    Fecha = c.Fecha,
-                    UsuarioId = c.UsuarioId,
-                    NombreUsuario = c.Usuario != null ? c.Usuario.Nombre : "Anónimo"
+                    Fecha = c.Fecha
                 })
                 .ToListAsync();
         }
