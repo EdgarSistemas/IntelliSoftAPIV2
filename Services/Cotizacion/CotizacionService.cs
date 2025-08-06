@@ -12,12 +12,14 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
         private readonly AppDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly EmailService _emailService;
+        private readonly PdfGeneratorService _pdfGeneratorService;
 
-        public CotizacionService(AppDbContext context, UserManager<ApplicationUser> userManager, EmailService emailService)
+        public CotizacionService(AppDbContext context, UserManager<ApplicationUser> userManager, EmailService emailService, PdfGeneratorService pdfGeneratorService)
         {
             _context = context;
             _userManager = userManager;
             _emailService = emailService;
+            _pdfGeneratorService = pdfGeneratorService;
         }
 
         public async Task<List<CotizacionResumenDto>> GetCotizacionesResumen()
@@ -44,6 +46,7 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             return cotizaciones.Select(c =>
             {
                 var basePrice = Math.Round(c.Subtotal, 2);
+                var ganancia = Math.Round(basePrice * (c.PorcentajeGanancia / 100), 2);
                 var conGanancia = Math.Round(basePrice * (1 + c.PorcentajeGanancia / 100), 2);
                 var conRiesgo = c.AplicaRiesgo == 1
                     ? Math.Round(conGanancia * (1 + c.PorcentajeRiesgo / 100), 2)
@@ -58,9 +61,10 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
                     Hectareas = c.Hectareas,
                     NombreCliente = c.ClienteNombre,
                     PrecioBase = basePrice,
+                    Ganancia = ganancia,
                     PrecioConGanancia = conGanancia,
                     PrecioConRiesgo = conRiesgo,
-                    Total = conRiesgo
+                    Total = conGanancia
                 };
             }).ToList();
         }
@@ -89,6 +93,7 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             var porcentajeRiesgo = cotizacion.PorcentajeRiesgo;
             var aplicaRiesgo = cotizacion.AplicaRiesgo == 1;
 
+            var ganancia = Math.Round(precioBase * (porcentajeGanancia / 100), 2);
             var precioConGanancia = Math.Round(precioBase * (1 + porcentajeGanancia / 100), 2);
             var precioConRiesgo = aplicaRiesgo
                 ? Math.Round(precioConGanancia * (1 + porcentajeRiesgo / 100), 2)
@@ -105,8 +110,10 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
                 FechaSolicitud = cotizacion.FechaSolicitud ?? DateTime.MinValue,
                 Detalles = detallesDto,
                 PrecioBase = Math.Round(precioBase, 2),
+                Ganancia = ganancia,
                 PrecioConGanancia = precioConGanancia,
-                PrecioConRiesgo = precioConRiesgo
+                PrecioConRiesgo = precioConRiesgo,
+                Total = precioConGanancia
             };
         }
 
@@ -213,43 +220,51 @@ namespace IntelliSoftAPIV2.Services.Cotizacion
             var usuario = cotizacion.Usuario;
             var roles = await _userManager.GetRolesAsync(usuario);
 
-            // Si el usuario era anónimo, lo promovemos y enviamos las credenciales
-            if (roles.Contains("anonimo"))
+            try
             {
-                await _userManager.RemoveFromRoleAsync(usuario, "anonimo");
-
-                if (!roles.Contains("cliente"))
-                    await _userManager.AddToRoleAsync(usuario, "cliente");
+                string cuerpoHtml = $@"
+                    <h3>¡Tu cotización ha sido aceptada!</h3>
+                    <br>
+                    <p>Tu acceso al sistema está listo, y aquí están tus credenciales:</p>
+                    ";
 
                 if (!string.IsNullOrEmpty(usuario.ContrasenaGenerada))
                 {
-                    string cuerpoHtml = $@"
-                <h3>¡Tu cotización ha sido aceptada!</h3>
-                <p>Tu acceso al sistema está listo:</p>
-                <ul>
-                    <li><b>Email:</b> {usuario.Email}</li>
-                    <li><b>Contraseña:</b> {usuario.ContrasenaGenerada}</li>
-                </ul>
-                <p>Por seguridad, te recomendamos cambiar la contraseña después de iniciar sesión.</p>";
-
-                    try
-                    {
-                        await _emailService.EnviarCorreoAsync(usuario.Email, "Acceso a AquaGrow", cuerpoHtml);
-                    }
-                    catch (Exception ex)
-                    {
-                        return ServiceResult<string>.Failure($"Error al enviar correo: {ex.Message}");
-                    }
-
-                    usuario.ContrasenaGenerada = null;
+                    cuerpoHtml += $@"
+                        <p>Tu acceso al sistema está listo, y aquí están tus credenciales:</p>
+                        <ul>
+                            <li><b>Email:</b> {usuario.Email}</li>
+                            <li><b>Contraseña:</b> {usuario.ContrasenaGenerada}</li>
+                        </ul>
+                        <p>Por seguridad, te recomendamos cambiar la contraseña después de iniciar sesión.</p>";
                 }
+
+                // Generar PDF y adjuntar al correo
+                var cotizacionDto = await GetCotizacionById(dto.IdCotizacion);
+                var pdfBytes = _pdfGeneratorService.GenerarPdfCotizacion(cotizacionDto);
+
+                await _emailService.EnviarCorreoAsync(
+                    destinatario: usuario.Email,
+                    asunto: "Cotización aceptada - IntelliSoft AquaGrow",
+                    cuerpoHtml: cuerpoHtml,
+                    archivoAdjunto: pdfBytes,
+                    nombreArchivo: $"Cotizacion-{cotizacionDto.ClaveCotizacion}.pdf"
+                );
             }
+            catch (Exception ex)
+            {
+                return ServiceResult<string>.Failure($"Error al enviar correo: {ex.Message}");
+            }
+
+            // Borrar contraseña provisional si existía
+            if (!string.IsNullOrEmpty(usuario.ContrasenaGenerada))
+                usuario.ContrasenaGenerada = null;
 
             await _context.SaveChangesAsync();
 
             return ServiceResult<string>.CreateSuccess(
-                data: "Cotización aceptada correctamente",
-                message: "Cotización aceptada correctamente"
+                data: "Cotización aceptada y correo enviado correctamente",
+                message: "Cotización aceptada y correo enviado correctamente"
             );
         }
 

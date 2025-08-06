@@ -2,7 +2,7 @@
 
 namespace IntelliSoftAPIV2.Dtos.Comentarios
 {
-    public class ComentarioCreateDto
+    public class ComentarioOpinionCreateDto
     {
         [Required(ErrorMessage = "El mensaje es obligatorio.")]
         [StringLength(500, ErrorMessage = "El mensaje no puede exceder los 500 caracteres.")]

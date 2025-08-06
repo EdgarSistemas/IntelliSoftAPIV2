@@ -10,6 +10,7 @@
         public DateTime FechaSolicitud { get; set; }
         public decimal Total { get; set; }
         public decimal PrecioBase { get; set; }
+        public decimal Ganancia { get; set; }
         public decimal PrecioConGanancia { get; set; }
         public decimal PrecioConRiesgo { get; set; }
     }

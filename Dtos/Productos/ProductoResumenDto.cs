@@ -10,7 +10,7 @@
         public decimal PorcentajeGanancia { get; set; }
         public decimal PorcentajeRiesgo { get; set; }
         public decimal PrecioCosto { get; set; }
-
+        public decimal Ganancia { get; set; }
         public decimal PrecioConGanancia { get; set; }
         public decimal PrecioConRiesgo { get; set; }
     }

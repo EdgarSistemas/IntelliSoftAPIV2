@@ -10,5 +10,8 @@
         public int Calificacion { get; set; }
         public string? Comentario { get; set; }
         public DateTime? Fecha { get; set; }
+        public int? ComentarioId { get; set; }
+        public string? ComentarioAdmin { get; set; }
+        public DateTime? FechaComentarioAdmin { get; set; }
     }
 }

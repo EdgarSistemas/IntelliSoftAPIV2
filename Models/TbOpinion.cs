@@ -22,4 +22,6 @@ public partial class TbOpinion
     public virtual ApplicationUser Usuario { get; set; } = null!;
 
     public virtual TbProducto? Producto { get; set; }
+
+    public virtual ICollection<TbComentario> Comentarios { get; set; } = new List<TbComentario>();
 }

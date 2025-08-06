@@ -48,8 +48,10 @@ namespace IntelliSoftAPIV2.Services.Producto
                     HectareaBase = p.HectareaBase,
                     PrecioActual = precioBase,
                     PrecioCosto = precioBase,
+                    Ganancia = ganancia,
                     PorcentajeGanancia = p.PorcentajeGanancia,
                     PorcentajeRiesgo = p.PorcentajeRiesgo,
+
                     PrecioConGanancia = precioBase + ganancia,
                     PrecioConRiesgo = precioBase + ganancia + riesgo
                 };

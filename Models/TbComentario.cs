@@ -12,7 +12,7 @@ public partial class TbComentario
 
     public DateTime? Fecha { get; set; }
 
-    public int? OpinionId { get; set; }
+    public int OpinionId { get; set; }
 
     public int Estatus { get; set; }
 

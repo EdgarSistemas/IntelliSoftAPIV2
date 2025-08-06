@@ -96,10 +96,10 @@ public partial class AppDbContext : IdentityDbContext<ApplicationUser>
                 .HasColumnName("estatus");
 
             entity.HasOne(d => d.Opinion)
-                .WithMany()
-                .HasForeignKey(d => d.OpinionId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_Comentario_Opinion");
+                 .WithMany(p => p.Comentarios)
+                 .HasForeignKey(d => d.OpinionId)
+                 .OnDelete(DeleteBehavior.ClientSetNull)
+                 .HasConstraintName("FK_Comentario_Opinion");
         });
 
         modelBuilder.Entity<TbCompra>(entity =>
