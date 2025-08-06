@@ -203,28 +203,29 @@ namespace IntelliSoftAPIV2.Services.Producto
         }
 
 
-        public async Task<List<ProductoDocumentosDto>> ObtenerProductosDocumentosAsync()
+        public async Task<List<ProductoDocumentosDto>> ObtenerProductosDocumentosAsync(string userId)
         {
-            var productosConDocumentos = await _context.TbProductos
-                .Where(p => p.Estatus == 1)
+            var productosConDocumentos = await _context.TbPedidos
+                .Where(p => p.Estatus >= 2 && p.Cotizacion.UsuarioId == userId)
+                .Select(p => p.Cotizacion.Producto)
+                .Distinct() // Para que no se repitan productos si hay varios pedidos del mismo producto
                 .Select(p => new ProductoDocumentosDto
                 {
                     IdProducto = p.IdProductos,
                     Nombre = p.Nombre,
                     Descripcion = p.Descripcion,
-                    Documentos = _context.TbDocumentos
-                        .Where(d => d.IdProductos == p.IdProductos)
-                        .Select(d => new DocumentoDto
-                        {
-                            IdDocumento = d.IdDocumento,
-                            NombreDocumento = d.NombreDocumento,
-                            Url = d.Url
-                        }).ToList()
+                    Documentos = p.TbDocumentos.Select(d => new DocumentoDto
+                    {
+                        IdDocumento = d.IdDocumento,
+                        NombreDocumento = d.NombreDocumento,
+                        Url = d.Url
+                    }).ToList()
                 })
                 .ToListAsync();
 
             return productosConDocumentos;
         }
+
 
     }
 }
