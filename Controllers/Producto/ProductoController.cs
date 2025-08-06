@@ -80,6 +80,7 @@ namespace IntelliSoftAPIV2.Controllers.Producto
         public async Task<IActionResult> ObtenerProductosDocumentosAsync()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Console.WriteLine(userId);
             var productos = await _productoService.ObtenerProductosDocumentosAsync(userId);
             return Ok(productos);
         }

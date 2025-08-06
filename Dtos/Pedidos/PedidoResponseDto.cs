@@ -17,6 +17,7 @@ namespace IntelliSoftAPIV2.Dtos.Pedidos
 
         public int? ProductoId { get; set; }
         public string? NombreProducto { get; set; }
+        public decimal? PorcentajeGanancia { get; set; } 
         public List<CotizacionDetalleDto>? Detalles { get; set; }
     }
 }

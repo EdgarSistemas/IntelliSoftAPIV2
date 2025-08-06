@@ -2,6 +2,7 @@
 using IntelliSoftAPI.Models;
 using IntelliSoftAPIV2.Dtos.Productos;
 using IntelliSoftAPIV2.Dtos.Unidades;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
 namespace IntelliSoftAPIV2.Services.Producto
@@ -233,25 +234,77 @@ namespace IntelliSoftAPIV2.Services.Producto
 
         public async Task<List<ProductoDocumentosDto>> ObtenerProductosDocumentosAsync(string userId)
         {
-            var productosConDocumentos = await _context.TbPedidos
-                .Where(p => p.Estatus >= 2 && p.Cotizacion.UsuarioId == userId)
-                .Select(p => p.Cotizacion.Producto)
-                .Distinct() // Para que no se repitan productos si hay varios pedidos del mismo producto
-                .Select(p => new ProductoDocumentosDto
-                {
-                    IdProducto = p.IdProductos,
-                    Nombre = p.Nombre,
-                    Descripcion = p.Descripcion,
-                    Documentos = p.TbDocumentos.Select(d => new DocumentoDto
-                    {
-                        IdDocumento = d.IdDocumento,
-                        NombreDocumento = d.NombreDocumento,
-                        Url = d.Url
-                    }).ToList()
-                })
-                .ToListAsync();
+            var query = @"
+        SELECT 
+            p.id_productos AS IdProducto,
+            p.nombre AS Nombre,
+            p.descripcion AS Descripcion,
+            d.idDocumento AS IdDocumento,
+            d.nombre_columna AS NombreDocumento,
+            d.url AS Url
+        FROM [catalogos].[TB_Productos] p
+        LEFT JOIN [catalogos].[TB_Documento] d ON p.id_productos = d.id_producto
+        WHERE EXISTS (
+            SELECT 1
+            FROM [operaciones].[TB_Cotizaciones] c
+            WHERE p.id_productos = c.producto_id 
+            AND EXISTS (
+                SELECT 1
+                FROM [operaciones].[TB_Pedido] ped
+                WHERE c.id_cotizaciones = ped.cotizacion_id 
+                AND ped.estatus >= 2
+            ) 
+            AND c.cliente_id = @userId
+        )
+        ORDER BY p.id_productos";
 
-            return productosConDocumentos;
+            var productos = new List<ProductoDocumentosDto>();
+
+            using (var connection = _context.Database.GetDbConnection())
+            {
+                await connection.OpenAsync();
+
+                using (var command = connection.CreateCommand())
+                {
+                    command.CommandText = query;
+                    command.Parameters.Add(new SqlParameter("@userId", userId));
+
+                    using (var reader = await command.ExecuteReaderAsync())
+                    {
+                        var productosDict = new Dictionary<int, ProductoDocumentosDto>();
+
+                        while (await reader.ReadAsync())
+                        {
+                            var productoId = reader.GetInt32(0);
+
+                            if (!productosDict.TryGetValue(productoId, out var productoDto))
+                            {
+                                productoDto = new ProductoDocumentosDto
+                                {
+                                    IdProducto = productoId,
+                                    Nombre = reader.GetString(1),
+                                    Descripcion = reader.IsDBNull(2) ? null : reader.GetString(2),
+                                    Documentos = new List<DocumentoDto>()
+                                };
+                                productosDict.Add(productoId, productoDto);
+                                productos.Add(productoDto);
+                            }
+
+                            if (!reader.IsDBNull(3)) // Si hay documento
+                            {
+                                productoDto.Documentos.Add(new DocumentoDto
+                                {
+                                    IdDocumento = reader.GetInt32(3),
+                                    NombreDocumento = reader.GetString(4),
+                                    Url = reader.GetString(5)
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+
+            return productos;
         }
 
 
