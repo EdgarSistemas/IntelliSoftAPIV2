@@ -46,18 +46,21 @@ namespace IntelliSoftAPIV2.Services.Dashboard
         public async Task<List<ProductoMasVendidoDto>> ObtenerProductosMasVendidosAsync()
         {
             var resultado = await _context.TbCotizacionDetalles
-                 .Where(cd => cd.Cotizacion.Producto.Estatus == 1) 
-                 .GroupBy(cd => new { cd.Cotizacion.ProductoId, cd.Cotizacion.Producto.Nombre })
-                 .Select(g => new ProductoMasVendidoDto
-                 {
-                     NombreProducto = g.Key.Nombre,
-                     TotalVendido = g.Sum(cd => cd.Cantidad * cd.PrecioPromedio)
-                 })
-                 .OrderByDescending(p => p.TotalVendido)
-                 .ToListAsync();
+                .Include(cd => cd.Cotizacion)
+                    .ThenInclude(c => c.Producto)
+                .Where(cd => cd.Cotizacion.Producto != null && cd.Cotizacion.Producto.Estatus == 1)
+                .GroupBy(cd => new { cd.Cotizacion.ProductoId, cd.Cotizacion.Producto.Nombre })
+                .Select(g => new ProductoMasVendidoDto
+                {
+                    NombreProducto = g.Key.Nombre,
+                    TotalVendido = g.Sum(cd => cd.Cantidad * cd.PrecioPromedio)
+                })
+                .OrderByDescending(p => p.TotalVendido)
+                .ToListAsync();
 
             return resultado;
         }
+
 
         public async Task<List<ProductoOpinionDto>> ObtenerProductosMejorCalificadosAsync()
         {

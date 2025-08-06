@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using IntelliSoftAPIV2.Services.Producto;
+using System.Security.Claims;
 
 namespace IntelliSoftAPIV2.Controllers.Producto
 {
@@ -78,7 +79,9 @@ namespace IntelliSoftAPIV2.Controllers.Producto
         [HttpGet("documentos")]
         public async Task<IActionResult> ObtenerProductosDocumentosAsync()
         {
-            var productos = await _productoService.ObtenerProductosDocumentosAsync();
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            Console.WriteLine(userId);
+            var productos = await _productoService.ObtenerProductosDocumentosAsync(userId);
             return Ok(productos);
         }
 

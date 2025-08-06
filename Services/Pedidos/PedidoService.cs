@@ -183,7 +183,7 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                 .Include(p => p.Cotizacion)
                     .ThenInclude(c => c.Usuario)
                 .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Producto) // 👈 asegúrate de incluir esto
+                    .ThenInclude(c => c.Producto)
                 .Where(p => p.Cotizacion.UsuarioId == usuarioId && p.Estatus != 0)
                 .Select(p => new PedidoResponseDto
                 {
@@ -196,6 +196,7 @@ namespace IntelliSoftAPIV2.Services.Pedidos
 
                     ProductoId = p.Cotizacion.ProductoId,
                     NombreProducto = p.Cotizacion.Producto.Nombre,
+                    PorcentajeGanancia = p.Cotizacion.Producto.PorcentajeGanancia,
 
                     Estatus = p.Estatus,
                     Detalles = p.Cotizacion.Detalles.Select(d => new CotizacionDetalleDto
