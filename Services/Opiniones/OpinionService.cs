@@ -58,7 +58,9 @@ namespace IntelliSoftAPIV2.Services.Opiniones
                         .OrderByDescending(c => c.Fecha)
                         .Select(c => c.Fecha)
                         .FirstOrDefault()
-                }).ToListAsync();
+                })
+                .OrderByDescending(o => o.Fecha)
+                .ToListAsync();
         }
 
         // Obtener por usuario (cliente)

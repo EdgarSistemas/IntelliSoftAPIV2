@@ -236,36 +236,43 @@ namespace IntelliSoftAPIV2.Services.Producto
 
         public async Task<List<ProductoDocumentosDto>> ObtenerProductosDocumentosAsync(string userId)
         {
+            // Ajusta estos nombres si en tu BD difieren:
+            // - [catalogos].[TB_Productos]
+            // - [catalogos].[TB_Documentos]  (nota: plural)
+            // - [operaciones].[TB_Cotizaciones]
+            // - [operaciones].[TB_CotizacionProducto]
+            // - [operaciones].[TB_Pedido]
+            // - Columnas: NombreDocumento (no nombre_columna)
+
             var query = @"
-        SELECT 
-            p.id_productos AS IdProducto,
-            p.nombre AS Nombre,
-            p.descripcion AS Descripcion,
-            d.idDocumento AS IdDocumento,
-            d.nombre_columna AS NombreDocumento,
-            d.url AS Url
-        FROM [catalogos].[TB_Productos] p
-        LEFT JOIN [catalogos].[TB_Documento] d ON p.id_productos = d.id_producto
-        WHERE EXISTS (
-            SELECT 1
-            FROM [operaciones].[TB_Cotizaciones] c
-            WHERE p.id_productos = c.producto_id 
-            AND EXISTS (
-                SELECT 1
-                FROM [operaciones].[TB_Pedido] ped
-                WHERE c.id_cotizaciones = ped.cotizacion_id 
-                AND ped.estatus >= 2
-            ) 
-            AND c.cliente_id = @userId
-        )
-        ORDER BY p.id_productos";
+                SELECT DISTINCT
+                    p.id_productos      AS IdProducto,
+                    p.nombre            AS Nombre,
+                    p.descripcion       AS Descripcion,
+                    d.IdDocumento       AS IdDocumento,
+                    d.nombre_columna   AS NombreDocumento,
+                    d.url               AS Url
+                FROM [catalogos].[TB_Productos] p
+                LEFT JOIN [catalogos].[TB_Documento] d
+                       ON p.id_productos = d.id_producto
+                WHERE EXISTS (
+                    SELECT 1
+                    FROM [operaciones].[TB_Cotizaciones] c
+                    JOIN [operaciones].[TB_CotizacionProducto] cp
+                         ON cp.cotizacion_id = c.id_cotizaciones
+                        AND cp.producto_id   = p.id_productos
+                    JOIN [operaciones].[TB_Pedido] ped
+                         ON ped.cotizacion_id = c.id_cotizaciones
+                        AND ped.estatus >= 2      -- En proceso o más
+                    WHERE c.cliente_id = @userId
+                )
+                ORDER BY p.id_productos;";
 
             var productos = new List<ProductoDocumentosDto>();
 
             using (var connection = _context.Database.GetDbConnection())
             {
                 await connection.OpenAsync();
-
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = query;
@@ -273,28 +280,29 @@ namespace IntelliSoftAPIV2.Services.Producto
 
                     using (var reader = await command.ExecuteReaderAsync())
                     {
-                        var productosDict = new Dictionary<int, ProductoDocumentosDto>();
+                        var dict = new Dictionary<int, ProductoDocumentosDto>();
 
                         while (await reader.ReadAsync())
                         {
                             var productoId = reader.GetInt32(0);
 
-                            if (!productosDict.TryGetValue(productoId, out var productoDto))
+                            if (!dict.TryGetValue(productoId, out var prod))
                             {
-                                productoDto = new ProductoDocumentosDto
+                                prod = new ProductoDocumentosDto
                                 {
                                     IdProducto = productoId,
                                     Nombre = reader.GetString(1),
                                     Descripcion = reader.IsDBNull(2) ? null : reader.GetString(2),
                                     Documentos = new List<DocumentoDto>()
                                 };
-                                productosDict.Add(productoId, productoDto);
-                                productos.Add(productoDto);
+                                dict.Add(productoId, prod);
+                                productos.Add(prod);
                             }
 
-                            if (!reader.IsDBNull(3)) // Si hay documento
+                            // Si hay documento
+                            if (!reader.IsDBNull(3))
                             {
-                                productoDto.Documentos.Add(new DocumentoDto
+                                prod.Documentos.Add(new DocumentoDto
                                 {
                                     IdDocumento = reader.GetInt32(3),
                                     NombreDocumento = reader.GetString(4),

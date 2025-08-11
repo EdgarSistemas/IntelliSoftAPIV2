@@ -94,7 +94,7 @@ builder.Services.AddScoped<IOpinionService, OpinionService>();
 builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<CotizacionService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
-//builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 
 builder.Services.AddControllers();

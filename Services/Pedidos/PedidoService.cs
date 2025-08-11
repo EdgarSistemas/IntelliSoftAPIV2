@@ -200,6 +200,7 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                 {
                     IdPedido = pedido.IdPedido,
                     CotizacionId = pedido.CotizacionId,
+                    CotizacionClave = pedido.Cotizacion.ClaveCotizacion,
                     FechaPedido = pedido.FechaPedido,
                     Estatus = pedido.Estatus,
                     ClienteId = pedido.Cotizacion.UsuarioId,
@@ -236,7 +237,7 @@ namespace IntelliSoftAPIV2.Services.Pedidos
                         PorcentajeGanancia = cp.PorcentajeGanancia,
                         PorcentajeRiesgo = cp.PorcentajeRiesgo,
                         AplicaRiesgo = cp.AplicaRiesgo,
-                        Detalles = null,
+                        Detalles = detDtos,
 
                         PrecioBase = basePrice,
                         Ganancia = ganancia,

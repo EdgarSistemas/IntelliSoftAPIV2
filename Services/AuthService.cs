@@ -16,18 +16,17 @@ namespace IntelliSoftAPIV2.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly TokenService _tokenService;
-        private readonly EmailService _emailService;
+        private readonly IEmailService _emailService;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             TokenService tokenService,
-            EmailService emailService)
+            IEmailService emailService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _tokenService = tokenService;
-            _emailService = emailService;
             _emailService = emailService;
         }
 
