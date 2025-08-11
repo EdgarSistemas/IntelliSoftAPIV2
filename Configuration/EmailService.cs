@@ -29,6 +29,7 @@ namespace IntelliSoftAPIV2.Configuration
             message.Body = builder.ToMessageBody();
 
             using var client = new SmtpClient();
+            client.ServerCertificateValidationCallback = (s, c, h, e) => true;
             await client.ConnectAsync(_settings.SmtpServer, _settings.SmtpPort, MailKit.Security.SecureSocketOptions.StartTls);
             await client.AuthenticateAsync(_settings.SmtpUser, _settings.SmtpPass);
             await client.SendAsync(message);

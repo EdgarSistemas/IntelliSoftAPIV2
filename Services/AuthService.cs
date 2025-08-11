@@ -1,8 +1,11 @@
-﻿using IntelliSoftAPIV2.Dtos.Users;
+﻿using IntelliSoftAPIV2.Configuration;
+using IntelliSoftAPIV2.Dtos.Users;
 using IntelliSoftAPIV2.Models;
+using iText.Commons.Actions.Contexts;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using Org.BouncyCastle.Crypto.Generators;
 using System.Security.Claims;
 using System.Threading.Tasks;
 
@@ -13,15 +16,19 @@ namespace IntelliSoftAPIV2.Services
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly TokenService _tokenService;
+        private readonly EmailService _emailService;
 
         public AuthService(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            TokenService tokenService)
+            TokenService tokenService,
+            EmailService emailService)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _tokenService = tokenService;
+            _emailService = emailService;
+            _emailService = emailService;
         }
 
         // REGISTRAR UN NUEVO USUARIO 
@@ -99,7 +106,7 @@ namespace IntelliSoftAPIV2.Services
         // Listar todos los usuarios 
         public async Task<List<object>> GetAllUsers()
         {
-            var users = await _userManager.Users.ToListAsync();
+            var users = await _userManager.Users.Where(u => u.estatus != false).ToListAsync();
             var result = new List<object>();
 
             foreach (var user in users)
@@ -123,19 +130,13 @@ namespace IntelliSoftAPIV2.Services
             var user = await _userManager.FindByIdAsync(id);
             if (user == null) return false;
 
-            // Eliminar roles primero
-            var roles = await _userManager.GetRolesAsync(user);
-            if (roles.Any())
-            {
-                foreach (var role in roles)
-                {
-                    await _userManager.RemoveFromRoleAsync(user, role);
-                }
-            }
+            // Cambiar el estatus a 0 (borrado lógico)
+            user.estatus = false;
 
-            var result = await _userManager.DeleteAsync(user);
+            var result = await _userManager.UpdateAsync(user);
             return result.Succeeded;
         }
+
 
         public async Task<ServiceResult<RegisterDto?>> ObtenerOCrearAnonimoPorEmail(string email, string nombre, string apellidos)
         {
@@ -279,6 +280,53 @@ namespace IntelliSoftAPIV2.Services
 
             return ServiceResult<string>.CreateSuccess(user.Id, "Usuario actualizado correctamente");
         }
+
+        // Editar usuario
+        public async Task<RegisterDto?> EditUser(EditDto dto)
+        {
+            var user = await _userManager.FindByIdAsync(dto.Id);
+            if (user == null) return null;
+            // Actualizar propiedades del usuario
+            user.Email = dto.Email;
+            user.UserName = dto.Email;
+            // Actualizar contraseña si se proporciona
+            if (!string.IsNullOrEmpty(dto.Password))
+            {
+                var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+                var resetResult = await _userManager.ResetPasswordAsync(user, token, dto.Password);
+                if (!resetResult.Succeeded) return null;
+            }
+            // Guardar cambios
+            var updateResult = await _userManager.UpdateAsync(user);
+
+            return new RegisterDto { Id = user.Id, Nombre = user.Nombre, Apellidos = user.Apellidos, Email = user.Email };
+        }
+
+        public async Task<(bool Exito, string Mensaje)> ActualizarContrasenaAsync(string email)
+        {
+                var usuario = await _userManager.FindByEmailAsync(email);
+                if (usuario == null)
+                    return (false, "Usuario no encontrado");
+
+                var nuevaContrasena = GenerarContrasenaSegura(8);
+                await _userManager.RemovePasswordAsync(usuario);
+                await _userManager.AddPasswordAsync(usuario, nuevaContrasena);
+
+            string asunto = "Actualización de contraseña";
+                string cuerpoHtml = $@"
+                                    <p>Hola {usuario.Nombre},</p>
+                                    <p>Tu contraseña ha sido restablecida. Tu nueva contraseña es:</p>
+                                    <p style='font-size:18px; font-weight:bold; color:#2c3e50;'>{nuevaContrasena}</p>
+                                    <p>Por favor cámbiala al iniciar sesión.</p>
+                                    <br>
+                                    <p>Saludos,<br>Equipo de soporte</p>
+                                ";
+
+                await _emailService.EnviarCorreoAsync(email, asunto, cuerpoHtml, null, null);
+
+                return (true, "Contraseña actualizada y enviada al correo");
+        }
+
 
     }
 
