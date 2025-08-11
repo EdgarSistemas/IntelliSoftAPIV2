@@ -3,6 +3,5 @@
     public class AceptarCotizacionDto
     {
         public int IdCotizacion { get; set; }
-        public string UsuarioId { get; set; }
     }
 }

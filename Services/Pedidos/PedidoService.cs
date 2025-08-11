@@ -8,207 +8,376 @@ namespace IntelliSoftAPIV2.Services.Pedidos
     public class PedidoService : IPedidoService
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<PedidoService> _logger;
 
-        public PedidoService(AppDbContext context)
+        // Estados: 0=Cancelado, 1=Pendiente, 2=EnProceso, 4=Pagado, 3=Finalizado
+        public const int ESTADO_CANCELADO = 0;
+        public const int ESTADO_PENDIENTE = 1;
+        public const int ESTADO_PROCESO = 2;
+        public const int ESTADO_PAGADO = 4;
+        public const int ESTADO_FINALIZADO = 3;
+
+        public PedidoService(AppDbContext context, ILogger<PedidoService> logger)
         {
             _context = context;
+            _logger = logger;
         }
+
+        // ----------------- Lecturas -----------------
 
         public async Task<List<PedidoResponseDto>> ObtenerTodosAsync()
         {
-            return await _context.TbPedidos
-            .Include(p => p.Cotizacion)
-                .ThenInclude(c => c.Usuario)
-            .Where(p => p.Estatus != 0)
-            .Select(p => new PedidoResponseDto
-            {
-                IdPedido = p.IdPedido,
-                CotizacionId = p.CotizacionId,
-                FechaPedido = p.FechaPedido,
-                ClienteId = p.Cotizacion.UsuarioId,
-                NombreCliente = p.Cotizacion.Usuario.Nombre + " " + p.Cotizacion.Usuario.Apellidos,
-                Comentario = p.Cotizacion.DetalleCotizacion,
-                Estatus = p.Estatus,
-            }).ToListAsync();
+            var pedidos = await _context.TbPedidos
+                .Include(p => p.Cotizacion).ThenInclude(c => c.Usuario)
+                .Include(p => p.Cotizacion).ThenInclude(c => c.CotizacionProductos)
+                    .ThenInclude(cp => cp.Producto)
+                .Include(p => p.Cotizacion).ThenInclude(c => c.CotizacionProductos)
+                    .ThenInclude(cp => cp.Detalles).ThenInclude(d => d.Insumo)
+                .Where(p => p.Estatus != ESTADO_CANCELADO)
+                .OrderByDescending(p => p.FechaPedido)
+                .ToListAsync();
 
+            var list = new List<PedidoResponseDto>();
+
+            foreach (var pedido in pedidos)
+            {
+                var resp = new PedidoResponseDto
+                {
+                    IdPedido = pedido.IdPedido,
+                    CotizacionId = pedido.CotizacionId,
+                    CotizacionClave = pedido.Cotizacion.ClaveCotizacion,
+                    FechaPedido = pedido.FechaPedido,
+                    Estatus = pedido.Estatus,
+                    ClienteId = pedido.Cotizacion.UsuarioId,
+                    NombreCliente = pedido.Cotizacion.Usuario != null
+                        ? $"{pedido.Cotizacion.Usuario.Nombre} {pedido.Cotizacion.Usuario.Apellidos}"
+                        : "",
+                    Comentario = pedido.Cotizacion.DetalleCotizacion,
+                    Partidas = new List<CotizacionPartidaDto>()
+                };
+
+                foreach (var cp in pedido.Cotizacion.CotizacionProductos)
+                {
+                    var detDtos = cp.Detalles.Select(d => new CotizacionProductoDetalleDto
+                    {
+                        InsumoId = d.InsumoId,
+                        NombreInsumo = d.Insumo?.Nombre ?? "",
+                        Cantidad = d.Cantidad,
+                        PrecioPromedio = d.PrecioPromedio
+                    }).ToList();
+
+                    var basePrice = decimal.Round(detDtos.Sum(d => d.Subtotal), 2);
+                    var ganancia = decimal.Round(basePrice * (cp.PorcentajeGanancia / 100m), 2);
+                    var conGan = decimal.Round(basePrice * (1 + cp.PorcentajeGanancia / 100m), 2);
+                    var conRiesgo = cp.AplicaRiesgo == 1
+                        ? decimal.Round(conGan * (1 + cp.PorcentajeRiesgo / 100m), 2)
+                        : conGan;
+
+                    resp.Partidas.Add(new CotizacionPartidaDto
+                    {
+                        CotizacionProductoId = cp.IdCotizacionProducto,
+                        ProductoId = cp.ProductoId,
+                        NombreProducto = cp.Producto?.Nombre,
+                        Hectareas = cp.Hectareas,
+                        PorcentajeGanancia = cp.PorcentajeGanancia,
+                        PorcentajeRiesgo = cp.PorcentajeRiesgo,
+                        AplicaRiesgo = cp.AplicaRiesgo,
+                        Detalles = null,
+
+                        PrecioBase = basePrice,
+                        Ganancia = ganancia,
+                        PrecioConGanancia = conGan,
+                        PrecioConRiesgo = conRiesgo,
+                        Total = conGan
+                    });
+                }
+
+                // Totales
+                resp.TotalPrecioBase = resp.Partidas.Sum(p => p.PrecioBase);
+                resp.TotalGanancia = resp.Partidas.Sum(p => p.Ganancia);
+                resp.TotalPrecioConGanancia = resp.Partidas.Sum(p => p.PrecioConGanancia);
+                resp.TotalPrecioConRiesgo = resp.Partidas.Sum(p => p.PrecioConRiesgo);
+                resp.Total = resp.Partidas.Sum(p => p.Total);
+
+                list.Add(resp);
+            }
+
+            return list;
         }
 
         public async Task<PedidoResponseDto?> ObtenerPorIdAsync(int id)
         {
-            return await _context.TbPedidos
-                .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Detalles)
-                .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Usuario)
-                .Where(p => p.IdPedido == id && p.Estatus != 0)
-                .Select(p => new PedidoResponseDto
+            var pedido = await _context.TbPedidos
+                .Include(p => p.Cotizacion).ThenInclude(c => c.Usuario)
+                .Include(p => p.Cotizacion).ThenInclude(c => c.CotizacionProductos)
+                    .ThenInclude(cp => cp.Producto)
+                .Include(p => p.Cotizacion).ThenInclude(c => c.CotizacionProductos)
+                    .ThenInclude(cp => cp.Detalles).ThenInclude(d => d.Insumo)
+                .FirstOrDefaultAsync(p => p.IdPedido == id && p.Estatus != ESTADO_CANCELADO);
+
+            if (pedido == null) return null;
+
+            var resp = new PedidoResponseDto
+            {
+                IdPedido = pedido.IdPedido,
+                CotizacionId = pedido.CotizacionId,
+                CotizacionClave = pedido.Cotizacion.ClaveCotizacion,
+                FechaPedido = pedido.FechaPedido,
+                Estatus = pedido.Estatus,
+                ClienteId = pedido.Cotizacion.UsuarioId,
+                NombreCliente = pedido.Cotizacion.Usuario != null
+                    ? $"{pedido.Cotizacion.Usuario.Nombre} {pedido.Cotizacion.Usuario.Apellidos}"
+                    : "",
+                Comentario = pedido.Cotizacion.DetalleCotizacion
+            };
+
+            // Partidas como en Cotización
+            foreach (var cp in pedido.Cotizacion.CotizacionProductos)
+            {
+                var detDtos = cp.Detalles.Select(d => new CotizacionProductoDetalleDto
                 {
-                    IdPedido = p.IdPedido,
-                    CotizacionId = p.CotizacionId,
-                    FechaPedido = p.FechaPedido,
-                    ClienteId = p.Cotizacion.UsuarioId,
-                    NombreCliente = p.Cotizacion.Usuario.Nombre + " " + p.Cotizacion.Usuario.Apellidos,
-                    Comentario = p.Cotizacion.DetalleCotizacion,
-                    Estatus = p.Estatus,
-                    Detalles = p.Cotizacion.Detalles.Select(d => new CotizacionDetalleDto
+                    InsumoId = d.InsumoId,
+                    NombreInsumo = d.Insumo?.Nombre ?? "",
+                    Cantidad = d.Cantidad,
+                    PrecioPromedio = d.PrecioPromedio
+                }).ToList();
+
+                var basePrice = detDtos.Sum(d => d.Subtotal);
+                basePrice = decimal.Round(basePrice, 2);
+
+                var ganancia = decimal.Round(basePrice * (cp.PorcentajeGanancia / 100m), 2);
+                var conGan = decimal.Round(basePrice * (1 + cp.PorcentajeGanancia / 100m), 2);
+                var conRiesgo = cp.AplicaRiesgo == 1
+                    ? decimal.Round(conGan * (1 + cp.PorcentajeRiesgo / 100m), 2)
+                    : conGan;
+
+                resp.Partidas.Add(new CotizacionPartidaDto
+                {
+                    CotizacionProductoId = cp.IdCotizacionProducto,
+                    ProductoId = cp.ProductoId,
+                    NombreProducto = cp.Producto?.Nombre,
+                    Hectareas = cp.Hectareas,
+                    PorcentajeGanancia = cp.PorcentajeGanancia,
+                    PorcentajeRiesgo = cp.PorcentajeRiesgo,
+                    AplicaRiesgo = cp.AplicaRiesgo,
+                    Detalles = detDtos,
+
+                    PrecioBase = basePrice,
+                    Ganancia = ganancia,
+                    PrecioConGanancia = conGan,
+                    PrecioConRiesgo = conRiesgo,
+                    Total = conGan
+                });
+            }
+
+            // Totales consolidados
+            resp.TotalPrecioBase = resp.Partidas.Sum(p => p.PrecioBase);
+            resp.TotalGanancia = resp.Partidas.Sum(p => p.Ganancia);
+            resp.TotalPrecioConGanancia = resp.Partidas.Sum(p => p.PrecioConGanancia);
+            resp.TotalPrecioConRiesgo = resp.Partidas.Sum(p => p.PrecioConRiesgo);
+            resp.Total = resp.Partidas.Sum(p => p.Total);
+
+            return resp;
+        }
+
+        public async Task<List<PedidoResponseDto>> ObtenerPorUsuarioAsync(string usuarioId)
+        {
+            var pedidos = await _context.TbPedidos
+                .Include(p => p.Cotizacion).ThenInclude(c => c.Usuario)
+                .Include(p => p.Cotizacion).ThenInclude(c => c.CotizacionProductos)
+                    .ThenInclude(cp => cp.Producto)
+                .Include(p => p.Cotizacion).ThenInclude(c => c.CotizacionProductos)
+                    .ThenInclude(cp => cp.Detalles).ThenInclude(d => d.Insumo)
+                .Where(p => p.Cotizacion.UsuarioId == usuarioId && p.Estatus != ESTADO_CANCELADO)
+                .OrderByDescending(p => p.FechaPedido)
+                .ToListAsync();
+
+            var list = new List<PedidoResponseDto>();
+
+            foreach (var pedido in pedidos)
+            {
+                var resp = new PedidoResponseDto
+                {
+                    IdPedido = pedido.IdPedido,
+                    CotizacionId = pedido.CotizacionId,
+                    FechaPedido = pedido.FechaPedido,
+                    Estatus = pedido.Estatus,
+                    ClienteId = pedido.Cotizacion.UsuarioId,
+                    NombreCliente = pedido.Cotizacion.Usuario != null
+                        ? $"{pedido.Cotizacion.Usuario.Nombre} {pedido.Cotizacion.Usuario.Apellidos}"
+                        : "",
+                    Comentario = pedido.Cotizacion.DetalleCotizacion,
+                    Partidas = new List<CotizacionPartidaDto>()
+                };
+
+                foreach (var cp in pedido.Cotizacion.CotizacionProductos)
+                {
+                    var detDtos = cp.Detalles.Select(d => new CotizacionProductoDetalleDto
                     {
-                        NombreInsumo = d.Insumo.Nombre,
+                        InsumoId = d.InsumoId,
+                        NombreInsumo = d.Insumo?.Nombre ?? "",
                         Cantidad = d.Cantidad,
                         PrecioPromedio = d.PrecioPromedio
-                    }).ToList()
-                })
-                .FirstOrDefaultAsync();
+                    }).ToList();
+
+                    var basePrice = decimal.Round(detDtos.Sum(d => d.Subtotal), 2);
+                    var ganancia = decimal.Round(basePrice * (cp.PorcentajeGanancia / 100m), 2);
+                    var conGan = decimal.Round(basePrice * (1 + cp.PorcentajeGanancia / 100m), 2);
+                    var conRiesgo = cp.AplicaRiesgo == 1
+                        ? decimal.Round(conGan * (1 + cp.PorcentajeRiesgo / 100m), 2)
+                        : conGan;
+
+                    resp.Partidas.Add(new CotizacionPartidaDto
+                    {
+                        CotizacionProductoId = cp.IdCotizacionProducto,
+                        ProductoId = cp.ProductoId,
+                        NombreProducto = cp.Producto?.Nombre,
+                        Hectareas = cp.Hectareas,
+                        PorcentajeGanancia = cp.PorcentajeGanancia,
+                        PorcentajeRiesgo = cp.PorcentajeRiesgo,
+                        AplicaRiesgo = cp.AplicaRiesgo,
+                        Detalles = null,
+
+                        PrecioBase = basePrice,
+                        Ganancia = ganancia,
+                        PrecioConGanancia = conGan,
+                        PrecioConRiesgo = conRiesgo,
+                        Total = conGan
+                    });
+                }
+
+                // Totales
+                resp.TotalPrecioBase = resp.Partidas.Sum(p => p.PrecioBase);
+                resp.TotalGanancia = resp.Partidas.Sum(p => p.Ganancia);
+                resp.TotalPrecioConGanancia = resp.Partidas.Sum(p => p.PrecioConGanancia);
+                resp.TotalPrecioConRiesgo = resp.Partidas.Sum(p => p.PrecioConRiesgo);
+                resp.Total = resp.Partidas.Sum(p => p.Total);
+
+                list.Add(resp);
+            }
+
+            return list;
         }
 
-        public async Task<ServiceResult<string>> EliminarAsync(int id)
+        // ----------------- Acciones -----------------
+
+        public async Task<ServiceResult<string>> CancelarAsync(int id)
         {
-            var pedido = await _context.TbPedidos.FirstOrDefaultAsync(p => p.IdPedido == id && p.Estatus != 0);
+            var pedido = await _context.TbPedidos.FirstOrDefaultAsync(p => p.IdPedido == id);
+            if (pedido == null) return ServiceResult<string>.Failure("Pedido no encontrado.");
 
-            if (pedido == null)
-                return ServiceResult<string>.Failure("Pedido no encontrado o ya fue eliminado.");
+            if (pedido.Estatus != ESTADO_PENDIENTE)
+                return ServiceResult<string>.Failure("Solo se pueden cancelar pedidos en estado 'Pendiente'.");
 
-            pedido.Estatus = 0;
+            pedido.Estatus = ESTADO_CANCELADO;
             await _context.SaveChangesAsync();
-
-            return ServiceResult<string>.CreateSuccess("Pedido eliminado correctamente.");
+            return ServiceResult<string>.CreateSuccess("Pedido cancelado.");
         }
 
-        public async Task<ServiceResult<string>> EstatusProcesoAsync(int id, int nuevoEstatus)
+        public async Task<ServiceResult<string>> ProcesarAsync(int id)
         {
-            if (id <= 0)
-                return ServiceResult<string>.Failure("ID de pedido inválido.");
-            
-            if (nuevoEstatus < 1 || nuevoEstatus > 3)
-                return ServiceResult<string>.Failure("Estatus invalido.");
-
             var pedido = await _context.TbPedidos
-                .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Detalles)
-                .FirstOrDefaultAsync(p => p.IdPedido == id && p.Estatus == 1);
+                .Include(p => p.Cotizacion).ThenInclude(c => c.CotizacionProductos)
+                    .ThenInclude(cp => cp.Detalles)
+                .FirstOrDefaultAsync(p => p.IdPedido == id);
 
-            if (pedido == null)
-                return ServiceResult<string>.Failure("Pedido no encontrado o eliminado.");
+            if (pedido == null) return ServiceResult<string>.Failure("Pedido no encontrado.");
+            if (pedido.Estatus != ESTADO_PENDIENTE)
+                return ServiceResult<string>.Failure("El pedido debe estar 'Pendiente'.");
 
-            // Validar existencias solo si el nuevo estatus es '2' (En proceso)
-            if (nuevoEstatus == 2)
+            // Sumar requerimientos por insumo (todas las partidas)
+            var requeridos = new Dictionary<int, decimal>(); // insumoId -> cantidad
+            foreach (var cp in pedido.Cotizacion.CotizacionProductos)
             {
-                foreach (var detalle in pedido.Cotizacion.Detalles)
+                foreach (var d in cp.Detalles)
                 {
-                    var insumo = await _context.TbInventarioInsumos
-                        .Where(i => i.InsumoId == detalle.InsumoId)
-                        .OrderByDescending(i => i.Fecha)
-                        .FirstOrDefaultAsync();
-
-                    if (insumo == null)
-                        return ServiceResult<string>.Failure($"El insumo con ID {detalle.InsumoId} no existe o está inactivo.");
-
-                    if (insumo.Existencias < detalle.Cantidad)
-                        return ServiceResult<string>.Failure($"No hay suficientes existencias del insumo (Requiere: {detalle.Cantidad}, Disponibles: {insumo.Existencias}).");
+                    if (!requeridos.ContainsKey(d.InsumoId)) requeridos[d.InsumoId] = 0m;
+                    requeridos[d.InsumoId] += d.Cantidad;
                 }
             }
 
-            // Si pasa todas las validaciones, actualiza el estatus
-            pedido.Estatus = nuevoEstatus;
-
-            _context.TbPedidos.Update(pedido);
-            await _context.SaveChangesAsync();
-
-            return ServiceResult<string>.CreateSuccess("Estatus actualizado correctamente.");
-        }
-
-        public async Task<ServiceResult<string>> CompletarPedidoAsync(int id)
-        {
-            var pedido = await _context.TbPedidos
-                .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Detalles)
-                .FirstOrDefaultAsync(p => p.IdPedido == id && p.Estatus == 2);
-
-            if (pedido == null)
-                return ServiceResult<string>.Failure("Pedido no encontrado o no está en proceso.");
-
-            foreach (var detalle in pedido.Cotizacion.Detalles)
+            // Validar existencias
+            var faltantes = new List<string>();
+            foreach (var kv in requeridos)
             {
-                var ultimoRegistro = await _context.TbInventarioInsumos
-                    .Where(i => i.InsumoId == detalle.InsumoId)
+                int insumoId = kv.Key; decimal req = kv.Value;
+
+                var ultimo = await _context.TbInventarioInsumos
+                    .Where(i => i.InsumoId == insumoId)
                     .OrderByDescending(i => i.Fecha)
                     .FirstOrDefaultAsync();
 
-                if (ultimoRegistro == null)
-                    return ServiceResult<string>.Failure($"No existe historial del insumo {detalle.InsumoId}");
+                var exist = (ultimo?.Existencias ?? 0);
+                if (exist < req) faltantes.Add($"Insumo {insumoId} (req: {req}, disp: {exist})");
+            }
 
-                if (ultimoRegistro.Existencias < detalle.Cantidad)
-                    return ServiceResult<string>.Failure($"Insumo {detalle.InsumoId} insuficiente. Disponibles: {ultimoRegistro.Existencias}");
+            if (faltantes.Count > 0)
+                return ServiceResult<string>.Failure("No hay existencias suficientes: " + string.Join("; ", faltantes));
 
-                // Cálculos
-                decimal salida = detalle.Cantidad;
-                decimal costo = ultimoRegistro.Costo ?? 0;
+            // Registrar salidas y pasar a EnProceso
+            foreach (var kv in requeridos)
+            {
+                int insumoId = kv.Key; decimal salida = kv.Value;
+
+                var ultimo = await _context.TbInventarioInsumos
+                    .Where(i => i.InsumoId == insumoId)
+                    .OrderByDescending(i => i.Fecha)
+                    .FirstOrDefaultAsync();
+
+                decimal costo = ultimo?.Costo ?? 0m;
                 decimal haber = salida * costo;
-                decimal saldoAnterior = ultimoRegistro.Saldo ?? 0;
-                decimal nuevoSaldo = saldoAnterior - haber;
-                decimal nuevasExistencias = (ultimoRegistro.Existencias?? 0) - salida;
+                decimal saldoAnt = ultimo?.Saldo ?? 0m;
+                decimal nuevoSaldo = saldoAnt - haber;
+                decimal existAnt = ultimo?.Existencias ?? 0m;
+                decimal nuevasExist = existAnt - salida;
 
-                // Crear nuevo registro de salida
-                var nuevoMovimiento = new TbInventarioInsumo
+                var mov = new TbInventarioInsumo
                 {
-                    InsumoId = detalle.InsumoId,
+                    InsumoId = insumoId,
                     Fecha = DateTime.Now,
                     Entrada = null,
-                    Salida = (int?)salida,
-                    Existencias = (int?)nuevasExistencias,
+                    Salida = (int?)salida,                     // tu modelo usa int? para Salida
+                    Existencias = (int?)nuevasExist,
                     Costo = costo,
                     Promedio = null,
                     Debe = null,
                     Haber = haber,
                     Saldo = nuevoSaldo,
-                    PedidoId = id,
-                    CompraId = null,
+                    PedidoId = pedido.IdPedido,
+                    CompraId = null
                 };
-
-                _context.TbInventarioInsumos.Add(nuevoMovimiento);
+                _context.TbInventarioInsumos.Add(mov);
             }
 
-            pedido.Estatus = 3;
-            _context.TbPedidos.Update(pedido);
+            pedido.Estatus = ESTADO_PROCESO;
             await _context.SaveChangesAsync();
-
-            return ServiceResult<string>.CreateSuccess("Pedido completado y salidas registradas.");
+            return ServiceResult<string>.CreateSuccess("Pedido procesado. Se registraron las salidas y el estado es 'En proceso'.");
         }
 
-        public async Task<List<PedidoResponseDto>> ObtenerPorUsuarioAsync(string usuarioId)
+        public async Task<ServiceResult<string>> MarcarPagadoPorClienteAsync(int id)
         {
-            return await _context.TbPedidos
-                .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Detalles)
-                        .ThenInclude(d => d.Insumo)
-                .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Usuario)
-                .Include(p => p.Cotizacion)
-                    .ThenInclude(c => c.Producto)
-                .Where(p => p.Cotizacion.UsuarioId == usuarioId && p.Estatus != 0)
-                .Select(p => new PedidoResponseDto
-                {
-                    IdPedido = p.IdPedido,
-                    CotizacionId = p.CotizacionId,
-                    FechaPedido = p.FechaPedido,
-                    ClienteId = p.Cotizacion.UsuarioId,
-                    NombreCliente = p.Cotizacion.Usuario.Nombre + " " + p.Cotizacion.Usuario.Apellidos,
-                    Comentario = p.Cotizacion.DetalleCotizacion,
+            var pedido = await _context.TbPedidos.FirstOrDefaultAsync(p => p.IdPedido == id);
+            if (pedido == null) return ServiceResult<string>.Failure("Pedido no encontrado.");
 
-                    ProductoId = p.Cotizacion.ProductoId,
-                    NombreProducto = p.Cotizacion.Producto.Nombre,
-                    PorcentajeGanancia = p.Cotizacion.Producto.PorcentajeGanancia,
+            if (pedido.Estatus != ESTADO_PROCESO)
+                return ServiceResult<string>.Failure("Solo se puede marcar pagado si el pedido está 'En proceso'.");
 
-                    Estatus = p.Estatus,
-                    Detalles = p.Cotizacion.Detalles.Select(d => new CotizacionDetalleDto
-                    {
-                        NombreInsumo = d.Insumo.Nombre,
-                        Cantidad = d.Cantidad,
-                        PrecioPromedio = d.PrecioPromedio
-                    }).ToList()
-                })
-                .ToListAsync();
+            pedido.Estatus = ESTADO_PAGADO;
+            await _context.SaveChangesAsync();
+            return ServiceResult<string>.CreateSuccess("Pedido marcado como 'Pagado'.");
         }
 
+        public async Task<ServiceResult<string>> FinalizarAsync(int id)
+        {
+            var pedido = await _context.TbPedidos.FirstOrDefaultAsync(p => p.IdPedido == id);
+            if (pedido == null) return ServiceResult<string>.Failure("Pedido no encontrado.");
 
+            if (pedido.Estatus != ESTADO_PAGADO)
+                return ServiceResult<string>.Failure("Solo se puede finalizar un pedido 'Pagado'.");
+
+            pedido.Estatus = ESTADO_FINALIZADO;
+            await _context.SaveChangesAsync();
+            return ServiceResult<string>.CreateSuccess("Pedido finalizado.");
+        }
     }
 }

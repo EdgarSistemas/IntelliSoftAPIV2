@@ -80,8 +80,8 @@ builder.Services.AddAuthorization();
 
 //servicios 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
-builder.Services.AddScoped<EmailService>();
-builder.Services.AddScoped<PdfGeneratorService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddSingleton<PdfGeneratorService>();
 
 builder.Services.AddScoped<TokenService>();
 builder.Services.AddScoped<AuthService>();
@@ -94,7 +94,7 @@ builder.Services.AddScoped<IOpinionService, OpinionService>();
 builder.Services.AddScoped<ProductoService>();
 builder.Services.AddScoped<CotizacionService>();
 builder.Services.AddScoped<IPedidoService, PedidoService>();
-builder.Services.AddScoped<IDashboardService, DashboardService>();
+//builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 
 builder.Services.AddControllers();

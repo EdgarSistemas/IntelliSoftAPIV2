@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using IntelliSoftAPIV2.Models;
 
 namespace IntelliSoftAPI.Models;
 
@@ -29,10 +30,9 @@ public partial class TbInsumo
     [Column("estatus")]
     public int? Estatus { get; set; }
 
+    public virtual ICollection<TbCotizacionProductoDetalle> TbCotizacionProductoDetalles { get; set; } = new List<TbCotizacionProductoDetalle>();
     public virtual ICollection<TbCompraDetalle> TbCompraDetalles { get; set; } = new List<TbCompraDetalle>();
-
     public virtual ICollection<TbInventarioInsumo> TbInventarioInsumos { get; set; } = new List<TbInventarioInsumo>();
-
     public virtual ICollection<TbProductoInsumo> TbProductoInsumos { get; set; } = new List<TbProductoInsumo>();
 
     public virtual TbCatalogoUnidad Unidad { get; set; } = null!;

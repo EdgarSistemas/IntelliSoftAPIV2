@@ -6,9 +6,11 @@ namespace IntelliSoftAPIV2.Services.Pedidos
     {
         Task<List<PedidoResponseDto>> ObtenerTodosAsync();
         Task<PedidoResponseDto?> ObtenerPorIdAsync(int id);
-        Task<ServiceResult<string>> EliminarAsync(int id);
-        Task<ServiceResult<string>> EstatusProcesoAsync(int id, int nuevoEstatus);
-        Task<ServiceResult<string>> CompletarPedidoAsync(int id);
+
+        Task<ServiceResult<string>> CancelarAsync(int id);
+        Task<ServiceResult<string>> ProcesarAsync(int id);
+        Task<ServiceResult<string>> MarcarPagadoPorClienteAsync(int id);
+        Task<ServiceResult<string>> FinalizarAsync(int id);
 
         Task<List<PedidoResponseDto>> ObtenerPorUsuarioAsync(string usuarioId);
     }

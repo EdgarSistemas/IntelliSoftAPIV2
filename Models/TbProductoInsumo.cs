@@ -12,7 +12,7 @@ public partial class TbProductoInsumo
     public int IdProductoInsumo { get; set; }
 
     [Column("producto_id")]
-    public int? ProductoId { get; set; }
+    public int ProductoId { get; set; }
 
     [Column("insumo_id")]
     public int? InsumoId { get; set; }

@@ -1,7 +1,7 @@
-﻿using MailKit.Net.Smtp;
+﻿// IntelliSoftAPIV2/Configuration/EmailService.cs
+using MailKit.Net.Smtp;
 using MimeKit;
 using Microsoft.Extensions.Options;
-using IntelliSoftAPIV2.Configuration;
 
 namespace IntelliSoftAPIV2.Configuration
 {
@@ -24,9 +24,7 @@ namespace IntelliSoftAPIV2.Configuration
             var builder = new BodyBuilder { HtmlBody = cuerpoHtml };
 
             if (archivoAdjunto != null && !string.IsNullOrWhiteSpace(nombreArchivo))
-            {
                 builder.Attachments.Add(nombreArchivo, archivoAdjunto, ContentType.Parse("application/pdf"));
-            }
 
             message.Body = builder.ToMessageBody();
 

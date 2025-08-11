@@ -35,10 +35,9 @@ public partial class TbProducto
     [Column("estatus")]
     public int Estatus { get; set; } = 1;
 
-    public virtual ICollection<TbCotizacion> TbCotizaciones { get; set; } = new List<TbCotizacion>();
+    public virtual ICollection<TbCotizacionProducto> TbCotizacionProductos { get; set; } = new List<TbCotizacionProducto>();
 
     public virtual ICollection<TbOpinion> TbOpiniones { get; set; } = new List<TbOpinion>();
-
     public virtual ICollection<TbProductoInsumo> TbProductoInsumos { get; set; } = new List<TbProductoInsumo>();
     public virtual ICollection<TbDocumento> TbDocumentos { get; set; } = new List<TbDocumento>();
 }

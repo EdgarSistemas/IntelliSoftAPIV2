@@ -2,9 +2,11 @@
 {
     public interface IEmailService
     {
-        public interface IEmailService
-        {
-            Task EnviarCorreoAsync(string destinatario, string asunto, string cuerpoHtml, byte[]? archivoAdjunto = null, string? nombreArchivo = null);
-        }
+            Task EnviarCorreoAsync(
+                string destinatario,
+                string asunto,
+                string cuerpoHtml,
+                byte[]? archivoAdjunto = null,
+                string? nombreArchivo = null);
     }
 }

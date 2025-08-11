@@ -3,12 +3,11 @@ using IntelliSoftAPIV2.Dtos.Pedidos;
 using IntelliSoftAPIV2.Services;
 using IntelliSoftAPIV2.Services.Pedidos;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IntelliSoftAPIV2.Controllers.Pedidos
 {
-    [Route("api/[controller]")]
+    [Route("api/pedidos")]
     [ApiController]
     public class PedidoController : ControllerBase
     {
@@ -20,106 +19,70 @@ namespace IntelliSoftAPIV2.Controllers.Pedidos
         }
 
         [Authorize(Roles = "admin")]
-        [HttpGet("getAll")]
+        [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            try
-            {
-                var pedidos = await _service.ObtenerTodosAsync();
-
-                if (pedidos == null || !pedidos.Any())
-                {
-                    return NotFound(new { message = "No se encontraron pedidos." });
-                }
-
-                return Ok(pedidos);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { message = "Ocurrió un error interno.", detail = ex.Message });
-            }
+            var pedidos = await _service.ObtenerTodosAsync();
+            if (pedidos == null || !pedidos.Any())
+                return NotFound(new { message = "No se encontraron pedidos." });
+            return Ok(pedidos);
         }
 
         [Authorize(Roles = "admin")]
-        [HttpGet("getById/{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
-            try
-            {
-                var pedido = await _service.ObtenerPorIdAsync(id);
+            var pedido = await _service.ObtenerPorIdAsync(id);
+            return pedido == null
+                ? NotFound(new { message = $"No se encontró el pedido {id}." })
+                : Ok(pedido);
+        }
 
-                if (pedido == null)
-                {
-                    return NotFound(new { message = $"No se encontró el pedido con Id {id}." });
-                }
+        // ---- Flujo nuevo ----
 
-                return Ok(pedido);
-            }
-            catch (Exception ex)
-            {
-                // Aquí puedes hacer logging del error si tienes un sistema
-                return StatusCode(500, new { message = "Ocurrió un error interno.", detail = ex.Message });
-            }
+        [Authorize(Roles = "admin")]
+        [HttpPut("{id:int}/cancelar")]
+        public async Task<IActionResult> Cancelar(int id)
+        {
+            var r = await _service.CancelarAsync(id);
+            return r.Success ? Ok(new { message = r.Data }) : BadRequest(new { message = r.Message });
         }
 
         [Authorize(Roles = "admin")]
-        [HttpDelete("eliminar/{id}")]
-        public async Task<IActionResult> Eliminar(int id)
+        [HttpPut("{id:int}/procesar")]
+        public async Task<IActionResult> Procesar(int id)
         {
-            if (id <= 0)
-                return BadRequest("ID inválido.");
-
-            var resultado = await _service.EliminarAsync(id);
-
-            if (!resultado.Success)
-                return NotFound(new { mensaje = resultado.Message });
-
-            return Ok(new { message = "Pedido eliminado correctamente" });
+            var r = await _service.ProcesarAsync(id);
+            return r.Success ? Ok(new { message = r.Data }) : BadRequest(new { message = r.Message });
         }
 
+        // Lo invoca el cliente autenticado
+        [Authorize(Roles = "cliente")]
+        [HttpPut("{id:int}/pagado")]
+        public async Task<IActionResult> MarcarPagadoPorCliente(int id)
+        {
+            // (Puedes validar que el pedido pertenezca al usuario corriente)
+            var r = await _service.MarcarPagadoPorClienteAsync(id);
+            return r.Success ? Ok(new { message = r.Data }) : BadRequest(new { message = r.Message });
+        }
 
         [Authorize(Roles = "admin")]
-        [HttpPut("actualizar/{id}")]
-        public async Task<IActionResult> ActualizarEstatus(int id, [FromBody] PedidoUpdateDto dto)
+        [HttpPut("{id:int}/finalizar")]
+        public async Task<IActionResult> Finalizar(int id)
         {
-            if (id <= 0)
-                return BadRequest(new { mensaje = "ID inválido." });
-
-            ServiceResult<string> resultado;
-
-            if (dto.Estatus == 2)
-            {
-                resultado = await _service.EstatusProcesoAsync(id, dto.Estatus);
-            }
-            else if (dto.Estatus == 3)
-            {
-                resultado = await _service.CompletarPedidoAsync(id);
-            }
-            else
-            {
-                return BadRequest(new { mensaje = "Estatus no soportado. Solo se aceptan 2 (en proceso) o 3 (completado)." });
-            }
-
-            if (!resultado.Success)
-                return NotFound(new { mensaje = resultado.Message });
-
-            return Ok(new { mensaje = resultado.Data });
+            var r = await _service.FinalizarAsync(id);
+            return r.Success ? Ok(new { message = r.Data }) : BadRequest(new { message = r.Message });
         }
 
+        // ---- Vista cliente ----
         [Authorize(Roles = "admin,cliente")]
         [HttpGet("cliente")]
         public async Task<IActionResult> ObtenerPedidosPorCliente()
         {
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            Console.WriteLine(userId);
-            if (string.IsNullOrEmpty(userId))
-                return Unauthorized("No se pudo obtener el ID del usuario autenticado");
-
+            if (string.IsNullOrEmpty(userId)) return Unauthorized("No se pudo obtener el ID de usuario.");
             var pedidos = await _service.ObtenerPorUsuarioAsync(userId);
-
             return Ok(pedidos);
         }
-
-
     }
 }
